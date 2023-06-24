@@ -33,7 +33,7 @@ public class GenCallGraph {
     public static String APKfile;
     
     // TODO you need to replace this path.
-    public static String AndroSDK = "/data/Faridah/android/platforms";
+    public static String AndroSDK = System.getenv("ANDROID_HOME")+"/platforms";
 
     /**
      * @param args
