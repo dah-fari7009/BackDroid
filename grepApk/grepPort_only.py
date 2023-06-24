@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*- 
 
 import os, sys, time, threading, shlex
-import urllib, urllib2
+#import urllib, urllib2 
+import yaml
 from optparse import OptionParser
 #from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
 from xml.dom import minidom
 from os.path import join, isdir, isfile, getsize
 from subprocess import Popen, PIPE
+
 import random
 
 
@@ -19,8 +21,6 @@ SLEEPTIME = 2
 SMLSLEEP = 4
 BIGSLEEP = 12 #since attack 3 requires 8s
 DATAOUT = 'dataOut'
-dexdump = '/data/Faridah/android/build-tools/30.0.2/dexdump'
-dex2jar="/data/Faridah/tools/dex2jar/dex-tools/build/distributions/dex-tools-2.2-SNAPSHOT/d2j-dex2jar.sh"
 backdroid="../bin/backdroid.sh"
 
 
@@ -42,10 +42,14 @@ class MyCmd(object):
 
         thread.join(timeout)
         if thread.is_alive():
-            print 'Terminating: %s' % self.cmd
+            print('Terminating: %s' % self.cmd)
             self.process.terminate()
             thread.join()
 
+
+def read_yaml(file_path):
+    with open(file_path, "r") as f:
+        return yaml.safe_load(f)
 """
 IN:  /dir1/dir2/dir3/xxx.apk
 OUT: /dir1/dir2/dir3/xxx
@@ -74,7 +78,7 @@ def getPackageName(apk):
     p1 = Popen(['aapt', 'dump', 'badging', apk], stdout=PIPE)
     p2 = Popen(['sed', '-n', "s/package.*name='\\([^']*\\).*/\\1/p"], stdin=p1.stdout, stdout=PIPE)
     (out, err) = p2.communicate()
-    package = out.rstrip('\n')
+    package = out.decode().rstrip('\n')
     return package
 
 
@@ -129,7 +133,7 @@ def tranDex2Dump(appunzip, applog):
     return isMore
 
 def myExit(code):
-    print '[Main] Start exiting...'
+    print('[Main] Start exiting...')
     sys.exit(code)
 
 def flush():
@@ -141,6 +145,15 @@ def flush():
 main entry
 ==============
 """
+
+CONFIGS = read_yaml("../conf.yml")
+dexdump = CONFIGS['DEXDUMP']
+print(dexdump)
+#'/data/Faridah/android/build-tools/30.0.2/dexdump'
+dex2jar= CONFIGS['DEX2JAR']
+print(dex2jar)
+
+
 # parse param
 usage = "usage: python %prog -a apkdir -f listfile -w NO"
 parser = OptionParser(usage=usage)
@@ -168,7 +181,7 @@ if options.whether:
 
 # read app list
 applist = []
-print '[Main] Read app list...'
+print('[Main] Read app list...')
 flush()
 if options.apk:
     os.system('ls %s/*.apk > %s' % (APPDIR, APPDUMP))
@@ -182,7 +195,7 @@ if f:
 
 # http://stackoverflow.com/a/415525/197165
 curtime = time.strftime("%Y-%m-%d %H:%M:%S")
-print 'Current Time: ', curtime
+print('Current Time: ', curtime)
 flush()
 
 
@@ -208,7 +221,7 @@ for app in applist:
         process = Popen(cmd, shell=True, stderr=PIPE)
         (out, err) = process.communicate()
         if err != '':
-            print 'unzip error: %s' % app 
+            print('unzip error: %s' % app) 
             flush()
             continue
 
@@ -219,7 +232,7 @@ for app in applist:
     # print
     i = i + 1
     package = getPackageName(app)
-    print '[%d] App: %s' % (i, package)
+    print('[%d] App: %s' % (i, package))
     flush()
 
     # grep dex
@@ -275,7 +288,7 @@ for app in applist:
     """
 
     # output
-    print '[GrepPort] %s\t%d\t%d\t%d\t%d\t%s' % (package, resdex, resdcl, muldex, reslib, soname)
+    print('[GrepPort] %s\t%d\t%d\t%d\t%d\t%s' % (package, resdex, resdcl, muldex, reslib, soname))
     #print '[GrepPort] %s\t%d\t%d' % (package, resdex, muldex)
     flush()
 
@@ -288,7 +301,7 @@ for app in applist:
 
 
 curtime = time.strftime("%Y-%m-%d %H:%M:%S")
-print 'Current Time: ', curtime
+print('Current Time: ', curtime)
 flush()
 
 if (not options.listfile) and options.apk:
