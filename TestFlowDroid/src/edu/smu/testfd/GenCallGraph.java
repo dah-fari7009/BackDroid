@@ -33,7 +33,7 @@ public class GenCallGraph {
     public static String APKfile;
     
     // TODO you need to replace this path.
-    public static String AndroSDK = "/home/dao/software/android-sdk-linux_x86/platforms";
+    public static String AndroSDK = "/data/Faridah/android/platforms";
 
     /**
      * @param args

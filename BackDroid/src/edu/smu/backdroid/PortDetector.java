@@ -173,6 +173,9 @@ public class PortDetector {
             } else if (type.equals("Crypto") || type.equals("CRYPTO") || type.equals("crypto")) {
                 DETECTtype = MyConstant.DETECT_CRYPTO;
             }
+            else if (type.equals("StartAct")){
+                DETECTtype = MyConstant.DETECT_STARTACT;
+            }
         }
         
         return 0;
@@ -264,6 +267,14 @@ public class PortDetector {
                     "-e \"Ljavax/net/ServerSocketFactory;.createServerSocket:(I\" " +
                     "| grep \"Class descriptor\" " +
                     "| grep -o \"L.*;\"", DEXDUMPlog);
+        }
+        else if (DETECTtype == MyConstant.DETECT_STARTACT) {
+            cmdcontent = String.format("cat %s " +
+            "| grep -e \";.startActivity\" " +
+            "-e \"Class descriptor\" " +
+            "| grep -B 1 -e \";.startActivity\" " +
+            "| grep \"Class descriptor\" " + 
+           "| grep -o \"L.*;\"", DEXDUMPlog);
         }
         
         MyUtil.printlnOutput(String.format("%s grep cmd: %s",

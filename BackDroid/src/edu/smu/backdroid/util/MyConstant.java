@@ -8,6 +8,13 @@ public class MyConstant {
     public static final String ServerSocketKeyword = "ServerSocket";
     public static final String HostnameVerifierKeyword = "setHostnameVerifier";
     public static final String CipherInstanceKeyword = "javax.crypto.Cipher getInstance";
+    public static final String StartActKeyword = "startActivity";
+    public static final String ContextKeyword = "<android.content.Context: ";
+    public static final String BundleKeyword = "android.os.Bundle";
+    public static final String StartActForResultKeyword = "startActivityForResult";
+    public static final String AndroidXKeyword = "<androidx.";
+        public static final String FragmentKeyword = "fragment";
+
     
     public static final String NormalPrefix = "   ";
     public static final String ForwardPrefix = "-->";
@@ -56,6 +63,42 @@ public class MyConstant {
     public static final String URLSetHostnameVerifier = 
             "<javax.net.ssl.HttpsURLConnection: void setHostnameVerifier(javax.net.ssl.HostnameVerifier)>";
     
+
+    /**
+     * ICC methods
+     */
+
+
+    public static final String StartActContextIntent= "<android.content.Context: void startActivity(android.content.Intent)>";
+    public static final String StartActContextIntentBundle = "<android.content.Context: void startActivity(android.content.Intent,android.os.Bundle)>";
+
+    public static final String GetIntent = "<android.app.Activity: android.content.Intent getIntent()>";
+
+    public static final String OnActivityResult = "<android.app.Activity: void onActivityResult(int,int,android.content.Intent)>";
+
+        public static final String StartActIntent= "<android.app.Activity: void startActivity(android.content.Intent)>";
+        public static final String StartActIntentBundle = "<android.app.Activity: void startActivity(android.content.Intent,android.os.Bundle)>";
+
+        public static final String AndroidX_StartActFragIntent = "<androidx.fragment.app.Fragment: void startActivity(android.content.Intent)>";
+        public static final String AndroidX_StartActFragIntentBundle = "<androidx.fragment.app.Fragment: void startActivity(android.content.Intent,android.os.Bundle)>";
+
+        public static final String StartActForResultIntent = "<android.app.Activity: void startActivityForResult(android.content.Intent,int)>";
+        public static final String StartActForResultIntentBundle = "<android.app.Activity: void startActivityForResult(android.content.Intent,int,android.os.Bundle)>";
+        public static final String AndroidX_StartActForResultIntent = "<androidx.activity.ComponentActivity: void startActivityForResult(android.content.Intent,int)>";
+        public static final String AndroidX_StartActForResultIntentBundle = "<androidx.activity.ComponentActivity: void startActivityForResult(android.content.Intent,int,android.os.Bundle)>";
+
+        public static final String AndroidX_StartActForResultFragIntent= "<androidx.fragment.app.Fragment: void startActivityForResult(android.content.Intent,int)>";
+
+
+//<android.app.Activity: void startActivityFromChild(android.app.Activity,android.content.Intent,int,android.os.Bundle)>
+//<android.app.Activity: void startActivityFromChild(android.app.Activity,android.content.Intent,int)>
+//<android.app.Activity: void startActivityFromFragment(android.app.Fragment,android.content.Intent,int,android.os.Bundle)>
+//<android.app.Activity: void startActivityFromFragment(android.app.Fragment,android.content.Intent,int)>
+//<android.app.Activity: void startActivityIfNeeded(android.content.Intent,int,android.os.Bundle)>
+//<android.app.Activity: void startActivityIfNeeded(android.content.Intent,int)>
+
+
+
     /**
      * IPC methods
      */
@@ -138,6 +181,7 @@ public class MyConstant {
      */
     public static final int DETECT_CRYPTO = 0;
     public static final int DETECT_OPENPORT = 1;
+    public static final int DETECT_STARTACT = 2;
     
     public static String dumpClassSer = "../lib/android-classes.ser";
     

@@ -189,6 +189,32 @@ public class ClassWorker {
                         if (PortDetector.DETECTtype != MyConstant.DETECT_CRYPTO)
                             methodSig = null;
                     }
+                    else if (unitstr.contains(MyConstant.StartActKeyword)){
+                        InvokeStmt stmt = (InvokeStmt)unit;
+                        InvokeExpr expr = stmt.getInvokeExpr();
+                        methodSig = expr.getMethod().getSignature();
+                        /*if(unitstr.contains(MyConstant.ContextKeyword)){
+                            if(unitstr.contains(MyConstant.BundleKeyword)){
+                                methodSig = MyConstant.StartActContextIntentBundle;
+                            else methodSig = MyConstant.StartActContextIntent;
+                        }
+                        else{
+                            if(unitstr.contains(MyConstant.StartActForResultKeyword)){ //startActivityForResult
+                                if(unitstr.contains(MyConstant.AndroidXKeyword)){
+
+                                }
+                                else{
+
+                                }
+                            }
+                            }
+                            else{
+
+                            }
+                        }*/
+                        if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
+                            methodSig = null;
+                    }
                     
                     if (methodSig != null) {
                         String msig = method.getSignature();

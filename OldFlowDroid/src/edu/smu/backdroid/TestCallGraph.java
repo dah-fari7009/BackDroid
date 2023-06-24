@@ -19,7 +19,7 @@ import soot.options.Options;
 public class TestCallGraph {
     
     // TODO you need to replace this path.
-    public static String AndroSDK = "/home/dao/software/android-sdk-linux_x86/platforms";
+    public static String AndroSDK = "/data/Faridah/android/platforms";
     
     /**
      * https://github.com/secure-software-engineering/soot-infoflow-android/issues/76
