@@ -6,6 +6,7 @@
 *_apktool
 *_src
 *.pyc
+conf.yml
 test
 dex2jarerr
 temptest

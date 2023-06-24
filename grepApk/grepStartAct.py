@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*- 
 
-import os, sys, time, threading, shlex
+import os, sys, time, threading, shlex, yaml
 from optparse import OptionParser
 #from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
 from xml.dom import minidom
@@ -19,6 +19,7 @@ SMLSLEEP = 4
 BIGSLEEP = 12 #since attack 3 requires 8s
 DATAOUT = 'dataOut'
 backdroid="../bin/backdroid.sh"
+DIR=os.path.dirname(os.path.realpath(__file__))
 
 
 """
@@ -27,7 +28,7 @@ from http://stackoverflow.com/questions/1191374/subprocess-with-timeout
 class MyCmd(object):
     def __init__(self, cmd):
         self.cmd = cmd
-        self.proce ss = None
+        self.process = None
 
     def run(self, timeout=60):
         def target():
@@ -71,9 +72,7 @@ def translateName(component, package):
 get package name for an apk
 """
 def getPackageName(apk):
-    # aapt to get package
-    p1 = Popen(['aapt', 'dump', 'badging', apk], stdout=PIPE)
-    p2 = Popen(['sed', '-n', "s/package: name='\\([^']*\\).*/\\1/p"], stdin=p1.stdout, stdout=PIPE)
+    p2 = Popen(['sh', f"{DIR}/package.sh", apk], stdout=PIPE)
     (out, err) = p2.communicate()
     package = out.decode().rstrip('\n')
     return package
@@ -215,7 +214,7 @@ for app in applist:
         process = Popen(cmd, shell=True, stderr=PIPE)
         (out, err) = process.communicate()
         #TODO refer to sdkVersion.py
-        if err != '':
+        if err.decode() != '':
             print('unzip error: %s' % app) 
             flush()
             continue
@@ -236,7 +235,7 @@ for app in applist:
     cmd = 'cat %s | grep -e ";.startActivity"' % applog
     process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     (out, err) = process.communicate()  #TODO error handling
-    if out != '':
+    if out.decode() != '':
         resdex = 1
         # only at this time, we do dex2jar
         if os.path.exists(appjar) == False:
@@ -248,7 +247,7 @@ for app in applist:
     cmd = 'cat %s | grep -e "Ldalvik/system/DexClassLoader;.loadClass:(Ljava/lang/String;)Ljava/lang/Class;" -e "Ldalvik/system/PathClassLoader;.loadClass:(Ljava/lang/String;Z)Ljava/lang/Class;"' % applog 
     process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     (out, err) = process.communicate()  #TODO error handling
-    if out != '':
+    if out.decode() != '':
         resdcl = 1
 
     #for native code?
