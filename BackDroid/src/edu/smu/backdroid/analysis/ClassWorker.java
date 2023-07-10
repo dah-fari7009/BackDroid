@@ -86,6 +86,8 @@ public class ClassWorker {
             String eMsg = e.getMessage();
             if (eMsg.contains(classname)) {
                 System.err.println("0ERROR: " + e.getMessage()); //class cannot be found in the beginning
+                soot.options.Options.v().set_allow_phantom_refs(true);
+                mclass = Scene.v().loadClass(classname, SootClass.BODIES);
             }
             else {
                 System.err.println("1ndWARN: " + e.getMessage()); //loadClassAndSupport has error

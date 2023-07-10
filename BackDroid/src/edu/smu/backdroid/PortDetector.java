@@ -110,7 +110,7 @@ public class PortDetector {
         Scene.v().extendSootClassPath("../lib/android-support-v7-preference.jar");
         Scene.v().extendSootClassPath("../lib/android-support-v7-recyclerview.jar");
         Scene.v().extendSootClassPath("../lib/android-support-v4.jar");
-        
+        Scene.v().extendSootClassPath("../lib/android_v30.jar");
         Scene.v().extendSootClassPath("../lib/android_v28.jar");
         Scene.v().extendSootClassPath("../lib/android_v23.jar");
         Scene.v().extendSootClassPath("../lib/android_v19.jar");
@@ -298,6 +298,8 @@ public class PortDetector {
             ObjectInputStream in = new ObjectInputStream(fileIn);
             apiClassSet = (Set<String>) in.readObject();
         }
+
+        System.out.println(classnames);
         
         /*
          * run ClassWorker for each class

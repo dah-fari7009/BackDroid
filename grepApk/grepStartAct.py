@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*- 
 
-import os, sys, time, threading, shlex
+import os, sys, time, threading, shlex, yaml
 from optparse import OptionParser
 #from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
 from xml.dom import minidom
@@ -27,7 +27,7 @@ from http://stackoverflow.com/questions/1191374/subprocess-with-timeout
 class MyCmd(object):
     def __init__(self, cmd):
         self.cmd = cmd
-        self.proce ss = None
+        self.process = None
 
     def run(self, timeout=60):
         def target():
@@ -215,8 +215,8 @@ for app in applist:
         process = Popen(cmd, shell=True, stderr=PIPE)
         (out, err) = process.communicate()
         #TODO refer to sdkVersion.py
-        if err != '':
-            print('unzip error: %s' % app) 
+        if err.decode() != '':
+            print('unzip error: %s %s' % (app, err)) 
             flush()
             continue
 
@@ -236,7 +236,7 @@ for app in applist:
     cmd = 'cat %s | grep -e ";.startActivity"' % applog
     process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     (out, err) = process.communicate()  #TODO error handling
-    if out != '':
+    if out.decode() != '':
         resdex = 1
         # only at this time, we do dex2jar
         if os.path.exists(appjar) == False:
@@ -248,7 +248,7 @@ for app in applist:
     cmd = 'cat %s | grep -e "Ldalvik/system/DexClassLoader;.loadClass:(Ljava/lang/String;)Ljava/lang/Class;" -e "Ldalvik/system/PathClassLoader;.loadClass:(Ljava/lang/String;Z)Ljava/lang/Class;"' % applog 
     process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     (out, err) = process.communicate()  #TODO error handling
-    if out != '':
+    if out.decode() != '':
         resdcl = 1
 
     #for native code?

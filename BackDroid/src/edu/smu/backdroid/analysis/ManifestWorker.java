@@ -85,6 +85,7 @@ public class ManifestWorker {
         boolean is_metadata = false;
         
         for (String entry : manifest_entries) {
+            //System.out.println(entry + " "+cur_comp);
             if (entry.contains(nameKeyWord)) {
                 if (!is_action && !is_category && !is_metadata) {
                     switch (cur_mtype) {
@@ -105,7 +106,7 @@ public class ManifestWorker {
                             break;
                     }
                     
-                } else if (is_action) {
+                } else if (is_action && cur_comp != null) {
                     // https://stackoverflow.com/questions/7080546/add-an-object-to-an-arraylist-and-modify-it-later
                     cur_comp.addAction(getValuePerManifestEntry(entry, false));
                 }
