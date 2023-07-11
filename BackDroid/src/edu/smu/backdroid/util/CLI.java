@@ -19,7 +19,7 @@ public class CLI {
         addOption(new Option("a", "apkname", true, "the apk prefix name"));
         addOption(new Option("p", "pkgname", true, "the pkg name of an apk"));
         addOption(new Option("r", "release", true, "the release level"));
-        addOption(new Option("t", "type", true, "the check type (CRYPTO or OpenPort)"));
+        addOption(new Option("t", "type", true, "the check type (CRYPTO or OpenPort or StartAct)"));
     }
     
     private void addOption(Option option) {
