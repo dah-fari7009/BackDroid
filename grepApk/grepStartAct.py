@@ -19,6 +19,7 @@ SMLSLEEP = 4
 BIGSLEEP = 12 #since attack 3 requires 8s
 DATAOUT = 'dataOut'
 backdroid="../bin/backdroid.sh"
+DIR=os.path.dirname(os.path.realpath(__file__))
 
 
 """
@@ -71,9 +72,7 @@ def translateName(component, package):
 get package name for an apk
 """
 def getPackageName(apk):
-    # aapt to get package
-    p1 = Popen(['aapt', 'dump', 'badging', apk], stdout=PIPE)
-    p2 = Popen(['sed', '-n', "s/package: name='\\([^']*\\).*/\\1/p"], stdin=p1.stdout, stdout=PIPE)
+    p2 = Popen(['sh', f"{DIR}/package.sh", apk], stdout=PIPE)
     (out, err) = p2.communicate()
     package = out.decode().rstrip('\n')
     return package

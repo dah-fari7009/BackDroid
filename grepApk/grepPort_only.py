@@ -22,6 +22,7 @@ SMLSLEEP = 4
 BIGSLEEP = 12 #since attack 3 requires 8s
 DATAOUT = 'dataOut'
 backdroid="../bin/backdroid.sh"
+DIR=os.path.dirname(os.path.realpath(__file__))
 
 
 """
@@ -220,8 +221,8 @@ for app in applist:
         cmd = 'unzip -n -q %s -d %s' % (app, appunzip)
         process = Popen(cmd, shell=True, stderr=PIPE)
         (out, err) = process.communicate()
-        if err != '':
-            print('unzip error: %s' % app) 
+        if err.decode() != '':
+            print('unzip error: %s %s' % (app, err))
             flush()
             continue
 
@@ -239,7 +240,7 @@ for app in applist:
     cmd = 'cat %s | grep -e "Ljava/net/ServerSocket;.accept:()Ljava/net/Socket;" -e "Ljava/nio/channels/ServerSocketChannel;.accept:()Ljava/nio/channels/SocketChannel;"' % applog 
     process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     (out, err) = process.communicate()  #TODO error handling
-    if out != '':
+    if out.decode() != '':
         resdex = 1
         # only at this time, we do dex2jar
         if os.path.exists(appjar) == False:
@@ -251,7 +252,7 @@ for app in applist:
     cmd = 'cat %s | grep -e "Ldalvik/system/DexClassLoader;.loadClass:(Ljava/lang/String;)Ljava/lang/Class;" -e "Ldalvik/system/PathClassLoader;.loadClass:(Ljava/lang/String;Z)Ljava/lang/Class;"' % applog 
     process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     (out, err) = process.communicate()  #TODO error handling
-    if out != '':
+    if out.decode() != '':
         resdcl = 1
 
     # grep lib
