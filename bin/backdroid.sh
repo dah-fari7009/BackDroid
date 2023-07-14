@@ -11,14 +11,15 @@ infoflow=../lib/soot-infoflow.jar:../lib/soot-infoflow-android.jar
 otherJar=../lib/slf4j-api-1.7.5.jar:../lib/slf4j-simple-1.7.5.jar:../lib/axml-2.0.jar
 sootJar=../lib/soot-trunk.jar
 
+JAVA=/usr/lib/jvm/java-8-openjdk-amd64/bin/java
 # $1: -a, the apk prefix name
 # $2: -p, the pkg name 
 # $ ../bin/backdroid.sh com.samremote.view-16 com.samremote.view
 if [ $1 ] && [ $2 ] && [ $3 ] #&& [ $4 ]
 then
-time java -Xmx4g -Xss100m -cp ../BackDroid/bin:$sootJar:../lib/commons-cli-1.2.jar:$infoflow:$otherJar:$mainSDK:$mainGAPI:$mainClass:$otherSDK:$otherClass edu.smu.backdroid.PortDetector -a $1 -p $2 -t $3 #-r $4
+time $JAVA -Xmx4g -Xss100m -cp ../BackDroid/bin:$sootJar:../lib/commons-cli-1.2.jar:$infoflow:$otherJar:$mainSDK:$mainGAPI:$mainClass:$otherSDK:$otherClass edu.smu.backdroid.PortDetector -a $1 -p $2 -t $3 #-r $4
 # $1: -a, the apk prefix name
 # backDroid/test$ ../bin/backdroid.sh com.samremote.view-16
 else
-time java -Xmx4g -Xss100m -cp ../BackDroid/bin:$sootJar:../lib/commons-cli-1.2.jar:$infoflow:$otherJar:$mainSDK:$mainGAPI:$mainClass:$otherSDK:$otherClass edu.smu.backdroid.PortDetector -a $1
+time $JAVA -Xmx4g -Xss100m -cp ../BackDroid/bin:$sootJar:../lib/commons-cli-1.2.jar:$infoflow:$otherJar:$mainSDK:$mainGAPI:$mainClass:$otherSDK:$otherClass edu.smu.backdroid.PortDetector -a $1
 fi
