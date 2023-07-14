@@ -27,12 +27,16 @@ import soot.SootMethod;
 import soot.SootMethodRef;
 import soot.Unit;
 import soot.Value;
+import soot.Local;
+import soot.ValueBox;
 import soot.jimple.ArrayRef;
 import soot.jimple.DefinitionStmt;
 import soot.jimple.InstanceFieldRef;
+import soot.jimple.StaticFieldRef;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;
 import soot.jimple.InvokeStmt;
+import soot.jimple.IfStmt;
 import soot.jimple.SpecialInvokeExpr;
 import soot.jimple.internal.JInvokeStmt;
 import soot.jimple.internal.JVirtualInvokeExpr;
@@ -40,6 +44,9 @@ import soot.jimple.toolkits.callgraph.CallGraph;
 import soot.jimple.toolkits.callgraph.Edge;
 import soot.shimple.PhiExpr;
 import soot.toolkits.scalar.ValueUnitPair;
+import soot.util.cfgcmd.CFGToDotGraph;
+import soot.toolkits.graph.UnitGraph;
+import soot.toolkits.graph.ExceptionalUnitGraph;
 
 public class MethodWorker {
     
@@ -150,6 +157,7 @@ public class MethodWorker {
      * @param isStaticTrack whether it is in the static track
      * @see backwardUnit below
      */
+    //TODO ignore methods in android or androidx package
     private void backwardOneMethod(Unit unit, String msig, Body body, BDG bdg,
             final boolean isStaticTrack, final CallerContainer nextContainer) {
         /*
@@ -160,6 +168,9 @@ public class MethodWorker {
         if (deadEntryMethods.size() >= MyConstant.MAX_DEAD_ENTRYR_NUM)
             return;
         
+        if(msig.startsWith("android.") || msig.startsWith("androidx"))
+            return;
+
         if (body == null || bdg == null)
             return;
         
@@ -170,7 +181,17 @@ public class MethodWorker {
         // TODO should have a CFG here, even with the SSA?
         // No need for isStaticTrack
         PatchingChain<Unit> u_chain = body.getUnits();
-        
+        //if(msig.contains("com.sec.android.easyMover.ui.CompletedActivity") && msig.contains("initView")){
+        if(msig.contains("actionReceivedApp") && msig.contains("com.sec.android.easyMover.ui.MainActivity")){
+            MyUtil.printlnOutput("Should plot here");
+            MyUtil.printOutput(msig);
+            MyUtil.printOutput(u_chain.toString());
+            UnitGraph graph = new ExceptionalUnitGraph(body);
+            new CFGToDotGraph().drawCFG(graph, body).plot(msig+"test.dot");
+        }
+       
+        //Note, multiple precedessors, issue is when there are multiple paths
+        //Maybe go to the first precedessor (if) and only if no changes were made to the taint set we try the other one?
         // For set a normal edge or a return edge
         BoolObj isReturn = new BoolObj();
         
@@ -437,6 +458,29 @@ public class MethodWorker {
                     
                 }//--end of tainted
             }//--end of DefinitionStmt
+            else if(pre_unit instanceof IfStmt){ //TODO use ExceptionalUnitGraph instead
+                if(msig.contains("actionReceivedApp") && msig.contains("com.sec.android.easyMover.ui.MainActivity")){
+                IfStmt is = (IfStmt) pre_unit;
+                Value cond = is.getCondition();
+                MyUtil.printlnOutput(String.format("%s Found conditional statement inside %s", is.toString(), msig));
+                for(ValueBox used: cond.getUseBoxes()){
+                    Value v = used.getValue();
+                    if(v instanceof Local || v instanceof ArrayRef || v instanceof StaticFieldRef || v instanceof InstanceFieldRef)
+                        bdg.addTaintValue(v, msig);
+                    else MyUtil.printlnOutput(String.format("Found something %s that doesn't map to a var in %s", v, is.toString()));
+                }
+                //need to switch on the type of value, to taint all variables involved?
+                //Should be a ConditionExpr
+                //if(cond instance )
+                //should be control dependent if based on CFG
+                //add node to the graph (+ edge?)
+                //if (Expr) {
+                    //i assume expr can only contain variables and not methods right?
+                //}
+               // //add conditional to the set I guess
+                //taint used variables I guess
+            }
+        }
             
             /**
              * Only the function invocation, different from DefinitionStmt
@@ -458,7 +502,7 @@ public class MethodWorker {
              * 
              * TRUE{{specialinvoke r3.<java.net.InetSocketAddress: void <init>(java.lang.String,int)>("127.0.0.1", @parameter0: int + 0)}}
              */
-            else if (pre_unit instanceof InvokeStmt) {
+            else if (pre_unit instanceof InvokeStmt) { //note do we need to jump into methods if there's no dependency?
                 InvokeStmt is = (InvokeStmt) pre_unit;
                 InvokeExpr ie = is.getInvokeExpr();
                 
@@ -473,7 +517,7 @@ public class MethodWorker {
                     Value base = iie.getBase();
                     
                     // We only determine by the base variable
-                    if (taintset.contains(base.toString())) {
+                    if (taintset.contains(base.toString())) { //okay looks like it's only for tainted variables (field modifications)
                         // Add this unit into the graph
                         BDGUnit node = bdg.addNormalNode(pre_unit, msig, isReturn, isStaticTrack);
                         isThisStmtTainted = true;
@@ -576,6 +620,8 @@ public class MethodWorker {
                 
             }//--end of InvokeStmt
             
+            //TODO add case of ifstatement
+
             /**
              * Check methods contain static fields
              */

@@ -1,2 +1,2 @@
-DEXDUMP : "/data/faridah/android/build-tools/30.0.2/dexdump"
+DEXDUMP : "/data/faridah/android/build-tools/31.0.0/dexdump"
 DEX2JAR : "/data/faridah/analysis-tools/dex-tools-2.1-SNAPSHOT/d2j-dex2jar.sh"

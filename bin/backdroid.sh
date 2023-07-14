@@ -16,9 +16,9 @@ sootJar=../lib/soot-trunk.jar
 # $ ../bin/backdroid.sh com.samremote.view-16 com.samremote.view
 if [ $1 ] && [ $2 ] && [ $3 ] #&& [ $4 ]
 then
-time timeout 61m java -Xmx4g -Xss100m -cp ../BackDroid/bin:$sootJar:../lib/commons-cli-1.2.jar:$infoflow:$otherJar:$mainSDK:$mainGAPI:$mainClass:$otherSDK:$otherClass edu.smu.backdroid.PortDetector -a $1 -p $2 -t $3 #-r $4
+time timeout 61m /usr/lib/jvm/java-8-openjdk-amd64/bin/java -Xmx4g -Xss100m -cp ../BackDroid/bin:$sootJar:../lib/commons-cli-1.2.jar:$infoflow:$otherJar:$mainSDK:$mainGAPI:$mainClass:$otherSDK:$otherClass edu.smu.backdroid.PortDetector -a $1 -p $2 -t $3 #-r $4
 # $1: -a, the apk prefix name
 # backDroid/test$ ../bin/backdroid.sh com.samremote.view-16
 else
-time timeout 61m java -Xmx4g -Xss100m -cp ../BackDroid/bin:$sootJar:../lib/commons-cli-1.2.jar:$infoflow:$otherJar:$mainSDK:$mainGAPI:$mainClass:$otherSDK:$otherClass edu.smu.backdroid.PortDetector -a $1
+time timeout 61m /usr/lib/jvm/java-8-openjdk-amd64/bin/java -Xmx4g -Xss100m -cp ../BackDroid/bin:$sootJar:../lib/commons-cli-1.2.jar:$infoflow:$otherJar:$mainSDK:$mainGAPI:$mainClass:$otherSDK:$otherClass edu.smu.backdroid.PortDetector -a $1
 fi

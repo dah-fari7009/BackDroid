@@ -260,6 +260,12 @@ public class ClassWorker {
                             MyUtil.printlnOutput(String.format("[BackSink]%s---%s---analyzed---REACHABLE",
                                     PortDetector.PKGmust, msig), MyConstant.RELEASE);
                         }
+
+                        //Here need to do some comversion to keep in memory
+                        //StarterActivity -> TargetActivity, extracted reasons? (best case scenario we don't wanna do the same METHo twice but ...)
+                        //Maybe if we could store the name of the explored methods?
+                        //In any case, if StartActivity is part of our analyzed target activities, we should combine reasons
+                        //Or output paths to the last reached activities, inputs to the tool
                         
                         /*
                          * Print BDG
@@ -275,7 +281,8 @@ public class ClassWorker {
                         /*
                          * Forward analysis to obtain parameter values
                          */
-                        new ForwardWorker(bdg).analyzeBDG();
+                        //Replace with our own analysis to summarize the constraints?
+                        //new ForwardWorker(bdg).analyzeBDG();
                     }
                 }
             }

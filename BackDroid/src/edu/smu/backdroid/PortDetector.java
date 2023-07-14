@@ -94,7 +94,7 @@ public class PortDetector {
         // A strange bug when run python grepPort.py in the background
         if (classpath.equals("null")) {
             // TODO I use Java 7 (Open JDK) to compile, but use Java 8 (Oracle) to run
-            Scene.v().setSootClassPath("/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar");
+            Scene.v().setSootClassPath("/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/rt.jar");
         }
         Scene.v().extendSootClassPath(DEX2JARfile);
         Scene.v().extendSootClassPath("../lib/android_v25.jar");
@@ -306,6 +306,14 @@ public class PortDetector {
          */
         for (String classname : classnames) {
             MyUtil.printlnOutput("*** Analyze class: "+classname, MyConstant.INFO);
+            if(classname.startsWith("android.") || classname.startsWith("androidx")){
+                MyUtil.printlnOutput("***Skipping android classes: "+classname, MyConstant.RELEASE);
+                continue;
+            }
+            if(!classname.equals("com.sec.android.easyMover.ui.MainActivity")){
+                MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
+                continue;
+            }
             ClassWorker classworker = new ClassWorker(this.tracklist);
             SootClass mclass = ClassWorker.loadClass(classname);
             classworker.analyzeClass(mclass);
