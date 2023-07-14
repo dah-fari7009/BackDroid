@@ -86,6 +86,8 @@ public class MethodWorker {
     public static MethodWorker v() {
         return MethodWorker.instance;
     }
+
+    //TODO ignore classes
     
     /**
      * The main function for backward slicing
@@ -167,8 +169,7 @@ public class MethodWorker {
             return;
         if (deadEntryMethods.size() >= MyConstant.MAX_DEAD_ENTRYR_NUM)
             return;
-        
-        if(msig.startsWith("android.") || msig.startsWith("androidx"))
+        if(msig.startsWith("android.") || msig.startsWith("androidx."))
             return;
 
         if (body == null || bdg == null)
