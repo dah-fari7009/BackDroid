@@ -13,7 +13,8 @@ public class MyConstant {
     public static final String BundleKeyword = "android.os.Bundle";
     public static final String StartActForResultKeyword = "startActivityForResult";
     public static final String AndroidXKeyword = "<androidx.";
-        public static final String FragmentKeyword = "fragment";
+    public static final String AndroidKeyword = "<android";
+    public static final String FragmentKeyword = "fragment";
 
     
     public static final String NormalPrefix = "   ";

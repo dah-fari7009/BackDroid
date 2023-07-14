@@ -191,7 +191,10 @@ public class ClassWorker {
                         if (PortDetector.DETECTtype != MyConstant.DETECT_CRYPTO)
                             methodSig = null;
                     }
-                    else if (unitstr.contains(MyConstant.StartActKeyword)){
+                    else if (unitstr.contains(MyConstant.StartActKeyword) && unitstr.contains(MyConstant.AndroidKeyword)){
+                        //TODO check
+                        System.out.println(unitstr);
+                        if(unit instanceof InvokeStmt){
                         InvokeStmt stmt = (InvokeStmt)unit;
                         InvokeExpr expr = stmt.getInvokeExpr();
                         methodSig = expr.getMethod().getSignature();
@@ -216,6 +219,7 @@ public class ClassWorker {
                         }*/
                         if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
                             methodSig = null;
+                    }
                     }
                     
                     if (methodSig != null) {

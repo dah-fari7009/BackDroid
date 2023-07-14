@@ -306,6 +306,10 @@ public class PortDetector {
          */
         for (String classname : classnames) {
             MyUtil.printlnOutput("*** Analyze class: "+classname, MyConstant.INFO);
+            if(classname.startsWith("android.") || classname.startsWith("androidx")){
+                MyUtil.printlnOutput("***Skipping android classes: "+classname, MyConstant.RELEASE);
+                continue;
+            }
             ClassWorker classworker = new ClassWorker(this.tracklist);
             SootClass mclass = ClassWorker.loadClass(classname);
             classworker.analyzeClass(mclass);
