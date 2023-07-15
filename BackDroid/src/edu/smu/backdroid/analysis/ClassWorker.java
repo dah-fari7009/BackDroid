@@ -143,6 +143,7 @@ public class ClassWorker {
             
             // TODO address performance problem for methods within the same method
             Iterator<Unit> iter_u = body.getUnits().iterator();
+            int targetId = 0;
             while (iter_u.hasNext()) {
                 Unit unit = iter_u.next();
 
@@ -191,16 +192,16 @@ public class ClassWorker {
                         if (PortDetector.DETECTtype != MyConstant.DETECT_CRYPTO)
                             methodSig = null;
                     }
-                    else if (unitstr.contains(MyConstant.StartActKeyword) && unitstr.contains(MyConstant.AndroidKeyword)){
+                    else if (unitstr.contains(MyConstant.StartActKeyword)){
                         //TODO check
                         System.out.println(unitstr);
                         if(unit instanceof InvokeStmt){
-                        InvokeStmt stmt = (InvokeStmt)unit;
-                        InvokeExpr expr = stmt.getInvokeExpr();
-                        methodSig = expr.getMethod().getSignature();
+                            InvokeStmt stmt = (InvokeStmt)unit;
+                            InvokeExpr expr = stmt.getInvokeExpr();
+                            methodSig = expr.getMethod().getSignature();
                         /*if(unitstr.contains(MyConstant.ContextKeyword)){
                             if(unitstr.contains(MyConstant.BundleKeyword)){
-                                methodSig = MyConstant.StartActContextIntentBundle;
+                                methodSig = MyConstant.StartActContext Bundle;
                             else methodSig = MyConstant.StartActContextIntent;
                         }
                         else{
@@ -275,12 +276,23 @@ public class ClassWorker {
                          * Print BDG
                          */
                         if (MyConstant.CURRENTRANK <= MyConstant.RELEASE) {
+                            targetId ++;
                             BDGToDotGraph converter = new BDGToDotGraph();
                             DotGraph dotg = converter.drawBDG(bdg, mclass.getName());
+                            
+                            //String fullName = PortDetector.PREFIXname+"_"+mclass.getName()."_"+method.getName()
                             dotg.plot(PortDetector.PREFIXname + "_"
                                         +mclass.getName()+"_"
-                                        +method.getName()+"_BDG.dot");
+                                        +method.getName()+"_"+targetId+"_BDG.dot");
                         }
+                        MyUtil.printOutput("Info for "+bdg.getInitNode().getMSig()+"\n");
+                        MyUtil.printOutput("Targets: "+bdg.getTargetIntentClasses()+"\n");
+                        MyUtil.printOutput("Tail nodes: "+bdg.getNormalTails()+"\n");
+                        MyUtil.printOutput("Fake tail nodes: "+bdg.getFakeTails()+"\n");
+                        MyUtil.printOutput("Field nodes: "+bdg.getFieldTails()+"\n");
+                        //Record in CATG;
+                        //BDG.TARGET_INTENT_NAME for tgt, and Bdg.getFirstNode().component name for 
+                        //Resolve collected symbolic constraints and map to a reason? Pattern extraction
                         
                         /*
                          * Forward analysis to obtain parameter values

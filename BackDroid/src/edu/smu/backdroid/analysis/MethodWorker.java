@@ -45,8 +45,12 @@ import soot.jimple.toolkits.callgraph.Edge;
 import soot.shimple.PhiExpr;
 import soot.toolkits.scalar.ValueUnitPair;
 import soot.util.cfgcmd.CFGToDotGraph;
+import soot.toolkits.graph.Block;
 import soot.toolkits.graph.UnitGraph;
 import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.graph.BlockGraph;
+import soot.toolkits.graph.BriefBlockGraph;
+import soot.toolkits.graph.pdg.*;
 
 public class MethodWorker {
     
@@ -58,7 +62,7 @@ public class MethodWorker {
     
     public static Map<String, Set<CallerContainer>> callerResCache = 
             new HashMap<String, Set<CallerContainer>>();
-    
+     
     // TODO write into paper
     private static List<String> innerCallChain = null;
     
@@ -143,6 +147,139 @@ public class MethodWorker {
         return isCurrentReachable;
     }
 
+    /*private void test(Unit unit, String msig, Body body, BDG bdg,
+            final boolean isStaticTrack, final CallerContainer nextContainer){
+
+                //Note, we're working with Shimple, so we already know which variables flow from different paths (i.e., cases where we will need to worry about branching)
+                //So essentially, when we're going backwards, if we see a if condition as the predecessor, then we add it (control dependency)
+                //If we reach a statement with two precedessors (can be reached from either if or else), we go into both paths and same, we will only add if statements if we saw a tainted variable's definition
+                //This should work because the 
+                //I could check if I have any unresolve Phi node in my taint set, that means I need to explore different paths
+                //Maybe that's not the one but still
+                //When I exit, if the Phi nodes are still there then I didn't resolve it?
+                //If there are no tainted Phi nodes, then I don't need to consider both cases
+                //Cause it implies there is no already tainted variable that flows from different places
+                //Oh actually, what if I have b = a and then a is from different places, but still a should be in only one path eventually
+                //Yeah cause the definition needs to flow from both paths
+
+                //So algorithm: in theory, we want to ignore all the not control dependent cases, but we are doing it transivitely from the data dependencies
+                //Assignments in Shimple already reveal that there is a definition that flows from multiple paths, only if such a definition exist do we need to look at multiple paths, yep
+
+
+                //Also if we put Phi(i0,i1) in the taint set and then in one path we reach i0, we know that we don't need to look for i1, it's a redefinition on a different path, so we can just remove the phi node as a whole (for that copy)
+                //Maybe we should recurse then, since both will be reaching the top of the program
+                //It would be nice if we could quick check whether the Phi node is defined within that branch or not
+
+                Do we need to recurse or can it be a loop with different copies? Probably not cause the variables in the Phi node might not be defined in the same if conditions
+                //Just a heuristic for the case where we don't need to check at all
+                //Lack of phi node means that there is no variable defined by both branches, not sure how common that case would be if we have many PHI nodes, we'll see
+
+
+                //TODO use block graph instead so we can easily skip branches
+                ExceptionalUnitGraph cfg = new ExceptionalUnitGraph(body);
+                Unit cur_unit = cfg.get(unit);
+                while(cur_unit != null){
+                    List<Unit> predecessors = cfg.getPredecessors(unit);
+                    if(precedessors == null){
+                        //done
+                    }
+                    else if(predecessors.size() == 1){ //only one path
+
+                    }
+                    else{ //two paths
+                        //duplicate the flows
+                        //Clone BDG
+                       //recurse for both paths
+                       //only if there's a tainted definition, will we end up adding the control flow when we reach it
+                       //if we reach a if statement, we should somehow return and check if anything was tainted?
+
+
+                    }
+                }
+            }
+*/
+
+   /* private void backwardIntraWP(Unit unit, String msig, Body body, BDG bdg, final boolean isStaticTrack, final CallerContainer nextContainer) {
+        if(!(msig.contains("actionReceivedApp") && msig.contains("com.sec.android.easyMover.ui.MainActivity")))
+            return;
+        BlockGraph graph = new BriefBlockGraph(body);
+        Unit cur_unit = unit, prev_unit;
+        Block cur_block = getBlockForUnit(cur_unit, graph);
+        boolean foundTaintInBranch = false;
+
+        while(true){
+            prev_unit = cur_block.getPredOf(cur_unit);
+
+            if(prev_unit instanceof DefinitionStmt){
+                //if we found a def of a tainted variable
+                foundTaintInBranch = true;
+            }
+            else if(prev_unit instanceof IfStmt){
+                if(foundTaintInBranch){
+                    //add all the variables to the taint set
+                    //deal with equals and such
+                }
+            }
+
+            if(prev_unit == null){
+                //cur_block = cur_block.get
+                List<Block> preds = cur_block.getPreds();
+                if(preds == null || preds.size() == 0)
+                    return;
+                if(preds.size() == 1){ //control dependence
+                    Block b = preds.get(0);
+                    if(foundTaintInBranch){
+                        //we could retrieve the last statement of the previous block right away (it can be a if statement or a goto)
+                        cur_block = b;
+                        cur_unit = prev_unit;//?
+                    }
+                }
+                else if(preds.size() == 2){
+                    //reset the taint in branch tracker
+                    foundTaintInBranch = false;
+                    //check if there's any Phi node in the taint set, otherwise no need to look into the branches
+                    //do the target case first?
+                    Block b = preds.get(1);
+                    backwardIntraWP(b.getTail(), msig, body, bdg, isStaticTrack, nextContainer); //should it be a copy of the bdg?
+                    //only when this is done, now we do a merge?
+                    //should probably return a set of constraints so we can do a or
+
+
+                    //how do I not duplicate the state all the way?
+                    //check if something was already visited (merged state?)
+
+                    //else 
+                    Block b = preds.get(1);
+                    cur_block = b; //we proceed with one block only, we can just ignore the other one (likely the block at pos 1 correspond to the target case (with the goto), so we'll reach the branching condition faster)
+                    //We could also make a method that retrieve the first merging point?
+
+                }
+            }
+        }
+
+    }
+    */
+
+    /*private Block getImmediateDominator(Block b, BlockGraph graph){
+        MHGDominatorFinder<Block> finder = new MHGDominatorsFinder(graph);
+        return (Block)finder.getImmediateDominator(b);
+    }
+    */
+    
+    private Block getBlockForUnit(Unit unit, BlockGraph graph){
+        Iterator<Block> blockIterator = graph.iterator();
+        while(blockIterator.hasNext()){
+            Block b = blockIterator.next();
+            if(b.toString().contains(unit.toString()))
+                return b;
+        }
+        return null;
+    }
+
+    private void backwardOneMethod(Unit unit, String msig, Body body, BDG bdg,
+            final boolean isStaticTrack, final CallerContainer nextContainer) {
+            backwardOneMethod(unit, msig, body, bdg, isStaticTrack, false, nextContainer);
+    }
     /**
      * The real function for backward slicing
      * 
@@ -161,7 +298,7 @@ public class MethodWorker {
      */
     //TODO ignore methods in android or androidx package
     private void backwardOneMethod(Unit unit, String msig, Body body, BDG bdg,
-            final boolean isStaticTrack, final CallerContainer nextContainer) {
+            final boolean isStaticTrack, final boolean mustUpdateTarget, final CallerContainer nextContainer) {
         /*
          * First check currentEntryNum
          */
@@ -183,16 +320,20 @@ public class MethodWorker {
         // No need for isStaticTrack
         PatchingChain<Unit> u_chain = body.getUnits();
         //if(msig.contains("com.sec.android.easyMover.ui.CompletedActivity") && msig.contains("initView")){
-        if(msig.contains("actionReceivedApp") && msig.contains("com.sec.android.easyMover.ui.MainActivity")){
+        /*if(msig.contains("actionReceivedApp") && msig.contains("com.sec.android.easyMover.ui.MainActivity")){
             MyUtil.printlnOutput("Should plot here");
             MyUtil.printOutput(msig);
             MyUtil.printOutput(u_chain.toString());
-            UnitGraph graph = new ExceptionalUnitGraph(body);
-            new CFGToDotGraph().drawCFG(graph, body).plot(msig+"test.dot");
-        }
+            //BlockGraph graph = new BriefBlockGraph(body);
+            //UnitGraph graph = new ExceptionalUnitGraph(body);
+            //new CFGToDotGraph().drawCFG(graph, body).plot(msig+"block_test.dot");
+            //ProgramDependenceGraph pdg = new HashMutablePDG(graph);
+            //new CFGToDotGraph().drawCFG(pdg, body).plot(msig+"pdg.dot");
+        }*/
        
         //Note, multiple precedessors, issue is when there are multiple paths
         //Maybe go to the first precedessor (if) and only if no changes were made to the taint set we try the other one?
+        
         // For set a normal edge or a return edge
         BoolObj isReturn = new BoolObj();
         
@@ -211,7 +352,7 @@ public class MethodWorker {
                 Value returnvalue = MyUtil.extractReturnValueFromUnit(unit);
                 if (returnvalue != null) {
                     bdg.addNormalNode(unit, msig, isReturn, isStaticTrack);
-                    bdg.addTaintValue(returnvalue, msig);
+                    bdg.addTaintValue(returnvalue, msig, mustUpdateTarget);
                     MyUtil.printlnOutput(String.format("%s The return stmt value: %s",
                             MyConstant.NormalPrefix, returnvalue.toString()),
                             MyConstant.DEBUG);
@@ -268,6 +409,7 @@ public class MethodWorker {
              * $i3 = 8000 + $i2;
              */
             if (pre_unit instanceof DefinitionStmt) {
+                //TODO update intent destination
                 DefinitionStmt ds = (DefinitionStmt) pre_unit;
                 Value ds_left = ds.getLeftOp();
                 String ds_left_str = ds_left.toString();
@@ -331,13 +473,13 @@ public class MethodWorker {
                      * Remove the taint. TODO other places?
                      * Better to put before the addTaintValue
                      */
-                    bdg.removeTaintValue(ds_left, msig);
+                    boolean updatedTargetIntent = bdg.removeTaintValue(ds_left, msig);
                     
                     /*
                      * We by default taint the parameters here?
                      * It may be over-tainted, e,g, InvokeExpr and PhiExpr below.
                      */
-                    bdg.addTaintValue(ds_right, msig);
+                    bdg.addTaintValue(ds_right, msig, updatedTargetIntent);
                     isThisStmtTainted = true;
                     
                     /*
@@ -423,7 +565,7 @@ public class MethodWorker {
                             // TODO Do we need to mark whether the parameter is tainted?
                             // TODO Again, the instance field may be complicated
                             backwardOneMethod(null, real_mthd_sig, invokebody,
-                                    bdg, isStaticTrack, nextContainer);
+                                    bdg, isStaticTrack, mustUpdateTarget, nextContainer);
                             
                             innerCallChain.remove(innerCallChain.size() - 1);
                             MyUtil.printlnOutput(String.format("%s Back to the previous %s",
@@ -451,7 +593,7 @@ public class MethodWorker {
                         List<ValueUnitPair> phi_vup_args = phi_expr.getArgs();
                         for (ValueUnitPair phi_vup_arg : phi_vup_args) {
                             Value phi_arg = phi_vup_arg.getValue();
-                            bdg.addTaintValue(phi_arg, msig);
+                            bdg.addTaintValue(phi_arg, msig, updatedTargetIntent);
                         }
                         
                         // TODO haven't analyzed predecessor Units
@@ -459,7 +601,7 @@ public class MethodWorker {
                     
                 }//--end of tainted
             }//--end of DefinitionStmt
-            else if(pre_unit instanceof IfStmt){ //TODO use ExceptionalUnitGraph instead
+            /*else if(pre_unit instanceof IfStmt){ //TODO use ExceptionalUnitGraph instead
                 if(msig.contains("actionReceivedApp") && msig.contains("com.sec.android.easyMover.ui.MainActivity")){
                 IfStmt is = (IfStmt) pre_unit;
                 Value cond = is.getCondition();
@@ -481,7 +623,7 @@ public class MethodWorker {
                // //add conditional to the set I guess
                 //taint used variables I guess
             }
-        }
+        }*/
             
             /**
              * Only the function invocation, different from DefinitionStmt
@@ -528,9 +670,26 @@ public class MethodWorker {
                          */
                         SootMethod raw_mthd = ie.getMethod();
                         String raw_cls_name = raw_mthd.getDeclaringClass().getName();
-                        if (PortDetector.apiClassSet.contains(raw_cls_name)) {
+                        /*
+                     * specialinvoke $r11.<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>($r12, class "com/lge/app1/fota/HttpServerService")
+                     */
+                        if (bdg.getTargetIntentClasses().contains(base.toString()) && (raw_mthd.getSignature().contains("<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>") || raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setClassName()"))) {
+                            //TODO setClassName
+                            //System.out.println("Found intent initialization, apiClassSet: "+)
+                            bdg.updateTargetIntentClasses(base.toString(), false);
+                            bdg.updateTargetIntentClasses(iie.getArg(1).toString(), true);
+                            //bdg.setTargetIntentClass(iie.getArg(1).toString()); //TODO track vars/aliases
+                            //insobj.putOneFieldValue("TARGET_INTENT_CLASS", argus.get(1).toString());//TODO toString or not
+                        }
+                        if (PortDetector.apiClassSet.contains(raw_cls_name)) { //assume true for startActivity
+                            //TODO, probably androidx isn't in this, so also augment it
                             // Taint all parameters
                             bdg.addTaintValue(ie, msig);
+                            //Here mark the register for intent
+                            //If class register, check if init? setComponentName ...
+                            //resolve the value, and check for entry in map
+                            //If reached or not in manifest then stop
+                            //For now a print?
                             
                         } else {
                             // Find the real method
@@ -598,6 +757,8 @@ public class MethodWorker {
                                     bdg.addTaintValue(para, msig);
                                 }
                             }
+
+                            //Here 
                             
                             innerCallChain.remove(innerCallChain.size() - 1);
                             MyUtil.printlnOutput(String.format("%s Back to the previous %s",
@@ -826,9 +987,9 @@ public class MethodWorker {
                     BDGUnit lastnode = bdg.getLastNode(isStaticTrack);
                     
                     // The previous version
-//                  Set<String> fakeset = specialInitMethod(initmethod, bdg, isStaticTrack);
+                    // Set<String> fakeset = specialInitMethod(initmethod, bdg, isStaticTrack);
                     crossCallerMethod(initmethod, bdg, newset, isStaticTrack, method.makeRef(), nextContainer);
-//                  findImplicitCaller(initmethod, bdg, isStaticTrack);
+                    //findImplicitCaller(initmethod, bdg, isStaticTrack);
                     
                     // Check called
                     Set<CallerContainer> caller_methods = callerResCache.get(initmethod.getSignature());
@@ -906,6 +1067,7 @@ public class MethodWorker {
                             Body src_body = MyUtil.retrieveActiveSSABody(src_method);
                             backwardOneMethod(src_unit, src_msig, src_body, 
                                     bdg, isStaticTrack, nextContainer);
+                                    //recursion
                         }
                     }
                 }
