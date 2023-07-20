@@ -107,7 +107,7 @@ public class ForwardTainter {
                     SootClass caller_class = 
                             ClassWorker.loadClass(one_cname);//TODO optimize it
                     SootMethod caller_method = 
-                            MyUtil.sootGetMethod(caller_class, one_subsig);
+                            MyUtil.sootGetMethod(caller_class, one_subsig); //Null pointer exception here 
                     String caller_msig = caller_method.getSignature();
                     
                     // TODO write crossCallChain and innerCallChain into paper

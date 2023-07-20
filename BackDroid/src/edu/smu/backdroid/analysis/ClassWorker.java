@@ -11,6 +11,8 @@ import edu.smu.backdroid.structure.VLMContainer;
 import edu.smu.backdroid.util.MyConstant;
 import edu.smu.backdroid.util.MyUtil;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -130,7 +132,8 @@ public class ClassWorker {
         Iterator<SootMethod> method_iter = mclass.methodIterator();
         while (method_iter.hasNext()) {
             SootMethod method = method_iter.next();
-            
+            /*if(!method.getName().equals("onCreate"))
+                continue;*/
             if (!method.isConcrete())
                 continue;
             
@@ -280,8 +283,12 @@ public class ClassWorker {
                             BDGToDotGraph converter = new BDGToDotGraph();
                             DotGraph dotg = converter.drawBDG(bdg, mclass.getName());
                             
+                            File dir = new File(PortDetector.PREFIXname);
+                            if(!dir.exists()){
+                                dir.mkdir();
+                            }
                             //String fullName = PortDetector.PREFIXname+"_"+mclass.getName()."_"+method.getName()
-                            dotg.plot(PortDetector.PREFIXname + "_"
+                            dotg.plot(PortDetector.PREFIXname+File.separator +PortDetector.PREFIXname + "_"
                                         +mclass.getName()+"_"
                                         +method.getName()+"_"+targetId+"_BDG.dot");
                         }

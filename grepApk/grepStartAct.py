@@ -270,7 +270,7 @@ for app in applist:
 
     # analyze parameters and conditions when resdex == 1
     if resdex and os.path.exists(appjar) and os.path.exists(applog):
-        os.system('%s %s %s %s' % (backdroid, apkprefix, package, "StartAct"))
+        os.system('%s %s %s %s > %s 2>&1' % (backdroid, apkprefix, package, "StartAct", f"DEBUG_INTERMEDIATE_LOG_{package}.log"))
         #os.system('%s %s %s %s' % (backdroid, applog, appjar, package))
 
     # output

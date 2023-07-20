@@ -114,7 +114,7 @@ public class MyConstant {
     public static final int DEBUG = 1;
     public static final int WARN = 2;
     public static final int RELEASE = 3;
-    public static int CURRENTRANK = RELEASE;
+    public static int CURRENTRANK = DEBUG;
     
     public static final String GLOBALFIELD = "GLOBALFIELD";
     

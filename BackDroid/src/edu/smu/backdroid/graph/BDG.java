@@ -46,6 +46,7 @@ public class BDG {
     private String initSig;
 
     private Set<String> TARGET_INTENT_CLASSES;
+    private boolean needTargetUpdate;
     
     /**
      * Store nodes in a layered manner
@@ -118,6 +119,7 @@ public class BDG {
         this.fakeTails = new HashSet<BDGUnit>();
 
         this.TARGET_INTENT_CLASSES = new HashSet<String>();
+        this.needTargetUpdate = false;
         
         /*
          * Create a field map
@@ -298,9 +300,6 @@ public class BDG {
             setTailNode(this.initNode, false);
     }
 
-    public void addTaintValue(Value value, String msig){
-        this.addTaintValue(value, msig, false);
-    }
     
     /**
      * The basic function for adding various Value (including those Expr) to be taints
@@ -319,7 +318,8 @@ public class BDG {
      * @param msig
      * @see ParaContainer.addTaintValue()
      */
-    public void addTaintValue(Value value, String msig, boolean mustUpdateTarget) {
+    public void addTaintValue(Value value, String msig) {
+        boolean mustUpdateTarget = needTargetUpdate;
         if (value == null)
             return;
         
@@ -520,7 +520,7 @@ public class BDG {
      * @param value
      * @param msig
      */
-    public boolean removeTaintValue(Value value, String msig) {
+    public void removeTaintValue(Value value, String msig) {
         /*
          * fields
          */
@@ -573,9 +573,7 @@ public class BDG {
         }
         if(TARGET_INTENT_CLASSES.contains(value.toString())){
             updateTargetIntentClasses(value.toString(), false);
-            return true;
         }
-        return false;
     }
     
     /**
@@ -837,6 +835,10 @@ public class BDG {
         return TARGET_INTENT_CLASSES;
     }
 
+    public boolean needTargetUpdate(){
+        return this.needTargetUpdate;
+    }
+
     public void updateTargetIntentClasses(String newVal, boolean add){
         if(add){
             MyUtil.printlnOutput(String.format("Updating target intent class for %s, adding %s", initNode.getMSig(), newVal));
@@ -846,6 +848,7 @@ public class BDG {
             MyUtil.printlnOutput(String.format("Updating target intent class for %s, removing %s", initNode.getMSig(), newVal));
             this.TARGET_INTENT_CLASSES.remove(newVal);
         }
+        needTargetUpdate = !add;
     }
 
 
