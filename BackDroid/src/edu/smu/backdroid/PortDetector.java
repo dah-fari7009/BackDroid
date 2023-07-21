@@ -297,6 +297,9 @@ public class PortDetector {
             FileInputStream fileIn = new FileInputStream(MyConstant.dumpClassSer);
             ObjectInputStream in = new ObjectInputStream(fileIn);
             apiClassSet = (Set<String>) in.readObject();
+            //TODO properly
+            apiClassSet.add("android.content.SharedPreferences");
+            //Add the androidx classes
         }
 
         System.out.println(classnames);
@@ -310,10 +313,20 @@ public class PortDetector {
                 MyUtil.printlnOutput("***Skipping android classes: "+classname, MyConstant.RELEASE);
                 continue;
             }
-            if(!classname.equals("com.sec.android.easyMover.ui.MainActivity")){
+            /*if(!classname.equals("com.amazon.alexa.client.alexaservice.ui.ShowOverLockScreenActivity")){
                 MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
                 continue;
-            }
+            }*/
+            /*if(!classname.equals("com.sec.android.easyMover.ui.RecvTransPortActivity")){
+                //("com.sec.android.easyMover.migration.GoogleLoginHelper")
+                MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
+                continue;
+            }*/
+            /*if(!classname.equals("com.sec.android.easyMover.migration.GoogleLoginHelper")){
+            //("com.sec.android.easyMover.ui.MainActivity")){
+                MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
+                continue;
+            }*/
             ClassWorker classworker = new ClassWorker(this.tracklist);
             SootClass mclass = ClassWorker.loadClass(classname);
             classworker.analyzeClass(mclass);

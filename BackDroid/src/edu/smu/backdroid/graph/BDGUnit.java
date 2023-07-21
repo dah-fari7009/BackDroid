@@ -24,10 +24,20 @@ public class BDGUnit {
     
     private Unit unit;
 
+    private boolean isNeeded = true;
+
     public BDGUnit(String msig, Unit unit) {
         this.msig = msig;
         this.unit = unit;
         this.id = NODE_ID++;
+    }
+
+    public boolean isNeeded(){
+        return isNeeded;
+    }
+
+    public void setNeeded(boolean isNeeded){
+        this.isNeeded = isNeeded;
     }
 
     public String getMSig() {

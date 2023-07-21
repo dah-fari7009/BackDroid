@@ -175,6 +175,10 @@ public class BDGToDotGraph {
                     subnode.setAttribute("style", DotGraphConstants.NODE_STYLE_FILLED);
                     subnode.setAttribute("fillcolor", "antiquewhite");
                 }
+                else if (!node.isNeeded()){
+                    subnode.setAttribute("style", DotGraphConstants.NODE_STYLE_FILLED);
+                    subnode.setAttribute("fillcolor", "tan");
+                }
             }
         }
     }

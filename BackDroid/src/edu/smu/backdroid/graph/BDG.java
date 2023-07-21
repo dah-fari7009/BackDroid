@@ -44,6 +44,9 @@ public class BDG {
      * E.g.: The initial target method signature
      */
     private String initSig;
+
+    private Set<String> TARGET_INTENT_CLASSES;
+    private boolean needTargetUpdate;
     
     /**
      * Store nodes in a layered manner
@@ -114,6 +117,9 @@ public class BDG {
         this.objectFieldSet = new HashSet<String>();
         this.normalTails = new HashSet<BDGUnit>();
         this.fakeTails = new HashSet<BDGUnit>();
+
+        this.TARGET_INTENT_CLASSES = new HashSet<String>();
+        this.needTargetUpdate = false;
         
         /*
          * Create a field map
@@ -142,6 +148,10 @@ public class BDG {
      * @return false if no parameters to be tracked
      */
     public boolean addInitNode(Unit initUnit, String containerMSig) {
+
+        BDGUnit initNode = new BDGUnit(containerMSig, initUnit);
+        this.initNode = initNode;
+
         boolean result = false;
         
         /*
@@ -155,9 +165,12 @@ public class BDG {
                         MyConstant.ForwardPrefix, arg.toString()),
                         MyConstant.WARN);
                 
-                boolean isAdded = this.addOneTaintValue(arg, containerMSig);
-                if (isAdded)
+                boolean isAdded = this.addOneTaintValue(arg, containerMSig, true);
+                if (isAdded){
                     result = true;
+                    //init node is always startActivity
+                    //updateTargetIntentClasses(arg, true);
+                }
             }
         }
         
@@ -165,8 +178,7 @@ public class BDG {
          * Add the initial node into graph, no matter the result is true or not.
          * Even if all parameters are constants, we then can use this node to generate results.
          */
-        BDGUnit initNode = new BDGUnit(containerMSig, initUnit);
-        this.initNode = initNode;
+        
         this.addBDGNote(initNode, false);
         
         MyUtil.printlnOutput(String.format("%s addInitNode: %s",
@@ -287,6 +299,7 @@ public class BDG {
         if (this.nodeList.size() == 1)
             setTailNode(this.initNode, false);
     }
+
     
     /**
      * The basic function for adding various Value (including those Expr) to be taints
@@ -306,6 +319,7 @@ public class BDG {
      * @see ParaContainer.addTaintValue()
      */
     public void addTaintValue(Value value, String msig) {
+        boolean mustUpdateTarget = needTargetUpdate;
         if (value == null)
             return;
         
@@ -336,27 +350,27 @@ public class BDG {
         //
         // TODO other Expr candidate?
         //
-        if (value instanceof InvokeExpr) {
+        if (value instanceof InvokeExpr) { //what about the return value?
             InvokeExpr ie = (InvokeExpr)value;
             
             if (ie instanceof InstanceInvokeExpr) {
                 InstanceInvokeExpr iie = (InstanceInvokeExpr) ie;
                 Value base = iie.getBase();
-                this.addOneTaintValue(base, msig);
+                this.addOneTaintValue(base, msig, false);
             }
             
             // Here argus here do not include the base variable
             List<Value> argus = ie.getArgs();
             for (Value argu : argus) {
-                this.addOneTaintValue(argu, msig);
+                this.addOneTaintValue(argu, msig, false);
             }
         }
         else if (value instanceof BinopExpr) {
             BinopExpr boe = (BinopExpr)value;
             Value boe_v1 = boe.getOp1();
             Value boe_v2 = boe.getOp2();
-            this.addOneTaintValue(boe_v1, msig);
-            this.addOneTaintValue(boe_v2, msig);
+            this.addOneTaintValue(boe_v1, msig, false);
+            this.addOneTaintValue(boe_v2, msig, false);
         }
         //
         // The normal cases such as follows:
@@ -366,7 +380,7 @@ public class BDG {
         // -- r0.<com.afollestad.neuron.Terminal$1: com.afollestad.neuron.Terminal this$0>
         //
         else {
-            this.addOneTaintValue(value, msig);
+            this.addOneTaintValue(value, msig, mustUpdateTarget);
         }
     }
     
@@ -383,7 +397,7 @@ public class BDG {
      * @param msig
      * @return False if the Value is not added
      */
-    private boolean addOneTaintValue(Value value, String msig) {
+    private boolean addOneTaintValue(Value value, String msig, boolean mustUpdateTarget) {
         if (value == null)
             return false;
         
@@ -398,7 +412,7 @@ public class BDG {
             // For r0.<com.afollestad.neuron.Terminal: int mPort>
             // We shall taint both r0 and the whole field
             //
-            if (value instanceof InstanceFieldRef) {
+            if (value instanceof InstanceFieldRef) {//TODO must update target for field case??
                 InstanceFieldRef ifr = (InstanceFieldRef) value;
                 Value base = ifr.getBase();
                 
@@ -429,6 +443,9 @@ public class BDG {
                         MyConstant.NormalPrefix, value.toString()),
                         MyConstant.WARN);
                 
+                if(mustUpdateTarget){
+                    updateTargetIntentClasses(str_value, mustUpdateTarget);
+                }
                 StaticFieldRef sfr = (StaticFieldRef) value;
                 this.fieldRefs.put(str_value, sfr);
                 
@@ -475,6 +492,9 @@ public class BDG {
             MyUtil.printlnOutput(String.format("%s Add %s to the method taint set",
                     MyConstant.NormalPrefix, value.toString()),
                     MyConstant.DEBUG);
+            if(mustUpdateTarget){
+                    updateTargetIntentClasses(value.toString(), mustUpdateTarget);
+            }
         }
         
         return true;
@@ -550,6 +570,9 @@ public class BDG {
          */
         else {
             this.getTaintSet(msig).remove(value.toString());
+        }
+        if(TARGET_INTENT_CLASSES.contains(value.toString())){
+            updateTargetIntentClasses(value.toString(), false);
         }
     }
     
@@ -807,5 +830,27 @@ public class BDG {
     public void setInitSig(String initsig) {
         this.initSig = initsig;
     }
+
+    public Set<String> getTargetIntentClasses(){
+        return TARGET_INTENT_CLASSES;
+    }
+
+    public boolean needTargetUpdate(){
+        return this.needTargetUpdate;
+    }
+
+    public void updateTargetIntentClasses(String newVal, boolean add){
+        if(add){
+            MyUtil.printlnOutput(String.format("Updating target intent class for %s, adding %s", initNode.getMSig(), newVal));
+            this.TARGET_INTENT_CLASSES.add(newVal);
+        }
+        else{
+            MyUtil.printlnOutput(String.format("Updating target intent class for %s, removing %s", initNode.getMSig(), newVal));
+            this.TARGET_INTENT_CLASSES.remove(newVal);
+        }
+        needTargetUpdate = !add;
+    }
+
+
     
 }
