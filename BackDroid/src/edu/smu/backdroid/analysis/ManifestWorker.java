@@ -1,4 +1,4 @@
-package edu.smu.backdroid.analysis;
+ package edu.smu.backdroid.analysis;
 
 import edu.smu.backdroid.PortDetector;
 import edu.smu.backdroid.structure.ManifestComp;
@@ -13,6 +13,8 @@ import java.util.Set;
 public class ManifestWorker {
     
     private static ManifestWorker instance;
+
+    //TODO also retrieve permissions
     
     /**
      * Typically it is "A: android:name".
@@ -20,6 +22,9 @@ public class ManifestWorker {
      * But could also be: A: :(0x01010003)="" (Raw: "")
      */
     private static String nameKeyWord = "(0x01010003)";
+    private static String schemeKeyWord = "(0x01010027)";
+    private static String hostKeyWord = "(0x01010028)";
+    private static String pathKeyWord = "(0x0101002a)";
     
     static {
         ManifestWorker.instance = new ManifestWorker();
@@ -53,6 +58,13 @@ public class ManifestWorker {
      * 2. Collect root class set
      * 3. Record entry components and their actions
      */
+    /**
+     * Example:
+     * E: activity (line=797)
+        A: android:theme(0x01010000)=@0x7f1302ca
+        A: android:name(0x01010003)="com.bumble.app.ui.flashsales.ConsumablePromoActivity" (Raw: "com.bumble.app.ui.flashsales.ConsumablePromoActivity")
+        A: android:screenOrientation(0x0101001e)=(type 0x10)0x7
+     */
     public void runAnalysis() {
         // Search manifest
         String cmdcontent = String.format("aapt d xmltree %s AndroidManifest.xml " +
@@ -60,7 +72,8 @@ public class ManifestWorker {
                 "-e \"E: activity\" -e \"E: service\" " +
                 "-e \"E: receiver\" -e \"E: provider\" " +
                 "-e \"E: action\" -e \"E: category\" -e \"E: meta-data\" " +
-                "-e \"%s\"", PortDetector.APKfile, nameKeyWord);
+                "-e \"E: data\" -e \"%s\"  -e \"%s\"  -e \"%s\"" +
+                "-e \"%s\"", PortDetector.APKfile, nameKeyWord, schemeKeyWord, hostKeyWord, pathKeyWord);
         MyUtil.printlnOutput(String.format("%s grep cmd: %s",
                 MyConstant.NormalPrefix, cmdcontent), MyConstant.DEBUG);
         
@@ -83,11 +96,13 @@ public class ManifestWorker {
         boolean is_action = false;
         boolean is_category = false;
         boolean is_metadata = false;
+        boolean is_data = false;
+
         
         for (String entry : manifest_entries) {
             //System.out.println(entry + " "+cur_comp);
             if (entry.contains(nameKeyWord)) {
-                if (!is_action && !is_category && !is_metadata) {
+                if (!is_action && !is_category && !is_metadata && !is_data) {
                     switch (cur_mtype) {
                         case MyConstant.MType_APP:
                         case MyConstant.MType_ACTIVITY:
@@ -115,18 +130,28 @@ public class ManifestWorker {
                 is_action = true;
                 is_category = false;
                 is_metadata = false;
+                is_data = false;
                 
             } else if (entry.contains("E: category")) {
                 is_action = false;
                 is_category = true;
                 is_metadata = false;
+                is_data = false;
                 
             } else if (entry.contains("E: meta-data")) {
                 is_action = false;
                 is_category = false;
                 is_metadata = true;
+                is_data = false;
                 
-            } else if (entry.contains("E: activity")) {
+            } 
+            else if (entry.contains("E: data")){
+                is_action = false;
+                is_category = false;
+                is_metadata = false;
+                is_data = true;
+            }
+            else if (entry.contains("E: activity")) {
                 cur_mtype = MyConstant.MType_ACTIVITY;
                 is_action = false;
                 is_category = false;
@@ -136,30 +161,35 @@ public class ManifestWorker {
                 cur_mtype = MyConstant.MType_SERVICE;
                 is_action = false;
                 is_category = false;
+                is_data = false;
                 
             } else if (entry.contains("E: receiver")) {
                 cur_mtype = MyConstant.MType_RECEIVER;
                 is_action = false;
                 is_category = false;
                 is_metadata = false;
+                is_data = false;
                 
             } else if (entry.contains("E: provider")) {
                 cur_mtype = MyConstant.MType_PROVIDER;
                 is_action = false;
                 is_category = false;
                 is_metadata = false;
+                is_data = false;
                 
             } else if (entry.contains("E: application")) {
                 cur_mtype = MyConstant.MType_APP;
                 is_action = false;
                 is_category = false;
                 is_metadata = false;
+                is_data = false;
                 
             } else if (entry.contains("A: package")) {
                 cur_mtype = MyConstant.MType_PKG;
                 is_action = false;
                 is_category = false;
                 is_metadata = false;
+                is_data = false;
                 PortDetector.PKGname = getValuePerManifestEntry(entry, false);
                 rootClsSet.add(PortDetector.PKGname);
             }
@@ -217,6 +247,10 @@ public class ManifestWorker {
         }
         
         return maniCompDexSet;
+    }
+
+    private boolean handleData(){
+        return true;
     }
 
 }

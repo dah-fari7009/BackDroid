@@ -46,6 +46,7 @@ public class BDG {
     private String initSig;
 
     private Set<String> TARGET_INTENT_CLASSES;
+    //TODO here store list of intent data (action, category, URI?)
     private boolean needTargetUpdate;
     
     /**

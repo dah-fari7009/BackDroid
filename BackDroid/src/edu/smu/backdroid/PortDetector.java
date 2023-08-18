@@ -268,7 +268,7 @@ public class PortDetector {
                     "| grep \"Class descriptor\" " +
                     "| grep -o \"L.*;\"", DEXDUMPlog);
         }
-        else if (DETECTtype == MyConstant.DETECT_STARTACT) {
+        else if (DETECTtype == MyConstant.DETECT_STARTACT) { //TODO: add RAICC apis as well (e.g., setExact)
             cmdcontent = String.format("cat %s " +
             "| grep -e \";.startActivity\" " +
             "-e \"Class descriptor\" " +

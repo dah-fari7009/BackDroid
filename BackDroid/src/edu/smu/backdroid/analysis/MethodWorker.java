@@ -646,7 +646,7 @@ public class MethodWorker {
                         if (bdg.getTargetIntentClasses().contains(base.toString())){ 
                             if(raw_mthd.getSignature().contains("<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>") 
                             || raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setClass")) {
-                            //TODO setClassName
+                            //includes setClassName
                             //System.out.println("Found intent initialization, apiClassSet: "+)
                             //TODO, augment with and and URIs Intent(String action); Intent(String action, String uri), Intent(xx, Class), Intent(Strinc action, Uri uri, xx, Class)
                             //specialinvoke $r1.<android.content.Intent: void <init>(java.lang.String)>("android.intent.action.VIEW")
@@ -655,14 +655,28 @@ public class MethodWorker {
                             //bdg.setTargetIntentClass(iie.getArg(1).toString()); //TODO track vars/aliases
                             //insobj.putOneFieldValue("TARGET_INTENT_CLASS", argus.get(1).toString());//TODO toString or not
                             }
-                            else if(raw_mthd.getSignature().contains("<android.content.Intent: void <init>(java.lang.String)") || raw_mthd.getSignature().contains("<android.content.Intent: void <init>(java.lang.String,android.net.Uri)")){
-                                        bdg.updateTargetIntentClasses(base.toString(), false); //action, uri //TODO deal with URI
+                            else if(raw_mthd.getSignature().contains("<android.content.Intent: void <init>(java.lang.String)") 
+                            || raw_mthd.getSignature().contains("<android.content.Intent: void <init>(java.lang.String,android.net.Uri)")){
+                                        bdg.updateTargetIntentClasses(base.toString(), false); //action, uri //TODO deal with URI (note URI is tracked in any case as all parameters are tainted conservatively)
                                         bdg.updateTargetIntentClasses(iie.getArg(0).toString(), true);
                             }
                             else if(raw_mthd.getSignature().contains("<android.content.Intent: void <init>(java.lang.String,android.net.Uri,android.content.Context,java.lang.Class)")){
                                 bdg.updateTargetIntentClasses(base.toString(), false); //action, uri //TODO deal with URI
                                 bdg.updateTargetIntentClasses(iie.getArg(3).toString(), true);
                             }
+                            else if(raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setAction")){
+                                bdg.updateTargetIntentClasses(iie.getArg(1).toString(), true);
+                                //TODO, should remove the base intent, but only in case where the intent is initialized without any parameters (todo)
+                            }
+                            else if(raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setData")){//TODO
+
+                            }
+                            else if(raw_mthd.getSignature().contains("<android.content.Intent: void <init>()>")){
+                                //TODO should remove if initialized with no parameters (like used action, category and/or data)
+                                MyUtil.printlnOutput("Should remove empty intent");
+                                //bdg.updateTargetIntentClasses(base.toString(), false);
+                            }
+
 
                         }
                         if (PortDetector.apiClassSet.contains(raw_cls_name)) { //assume true for startActivity
