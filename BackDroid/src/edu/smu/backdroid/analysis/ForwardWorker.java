@@ -559,7 +559,7 @@ public class ForwardWorker {
                      * specialinvoke $r11.<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>($r12, class "com/lge/app1/fota/HttpServerService")
                      */
                     if (unit_str.contains("<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>")) {
-                        insbjo.putOneFieldValue("TARGET_INTENT_CLASS", argus.get(1).toString());//TODO toString or not
+                        insobj.putOneFieldValue("TARGET_INTENT_CLASS", argus.get(1).toString());//TODO toString or not
                     }
                     /*
                      * virtualinvoke r30.<android.content.Intent: android.content.Intent putExtra(java.lang.String,int)>($r14, 18888)

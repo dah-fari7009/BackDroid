@@ -250,9 +250,7 @@ public class ClassWorker {
                         }
                         if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
                             methodSig = null;
-                        }
                     }
-
                     else if (unitstr.contains(MyConstant.PendingIntentSendKeyWord)){
                         for(String m: MyConstant.PendingIntentSendMethods){
                             if(unitstr.contains(m)){
@@ -262,11 +260,10 @@ public class ClassWorker {
                         }
                         if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
                             methodSig = null;
-                        }
                     }
 
                     else if (unitstr.contains(MyConstant.IntentSenderSendIntentKeyWord)){
-                        for(String m: MyConstant.IntentSenderSendIntentKeyWord){
+                        for(String m: MyConstant.IntentSenderSendIntentMethods){
                             if(unitstr.contains(m)){
                                 methodSig = m;
                                 break;
@@ -274,7 +271,6 @@ public class ClassWorker {
                         }
                         if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
                             methodSig = null;
-                        }
                     }
                     
                     if (methodSig != null) {

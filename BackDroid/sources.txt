@@ -19,6 +19,7 @@
 ./src/edu/smu/backdroid/structure/CallerContainer.java
 ./src/edu/smu/backdroid/structure/InstanceObj.java
 ./src/edu/smu/backdroid/structure/ManifestComp.java
+./src/edu/smu/backdroid/structure/ManifestData.java
 ./src/edu/smu/backdroid/structure/ParaContainer.java
 ./src/edu/smu/backdroid/structure/ParaHead.java
 ./src/edu/smu/backdroid/structure/ResultContainer.java

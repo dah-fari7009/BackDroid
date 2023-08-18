@@ -48,22 +48,22 @@ public class ManifestData {
   public String asUri(){
     StringBuilder result = new StringBuilder("");
 
-    if(scheme != null && !scheme.isBlank()){
+    if(scheme != null && !scheme.isEmpty()){//should be isEmpty
         result.append(scheme);
-        if(host != null && !host.isBlank()){
+        if(host != null && !host.isEmpty()){
             result.append("://"); //should this be added here or to scheme
             result.append(host);
-            if(port != null && !port.isBlank()){
+            if(port != null && !port.isEmpty()){
                 result.append(":");
                 result.append(port);
             }
         }
-        if(path != null && !path.isBlank() && !path.equals("/")){
+        if(path != null && !path.isEmpty() && !path.equals("/")){
             result.append("/");
             result.append(path);
         }
     }
-    return result.toString()
+    return result.toString();
   }
 
   /**

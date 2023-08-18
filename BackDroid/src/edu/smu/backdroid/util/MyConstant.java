@@ -12,8 +12,8 @@ public class MyConstant {
     public static final String ContextKeyword = "<android.content.Context: ";
     public static final String BundleKeyword = "android.os.Bundle";
     public static final String StartActForResultKeyword = "startActivityForResult";
-    public staticc final String PendingIntentGetActKeyWord = "getActivity";
-    public staticc final String PendingIntentGetBrKeyWord = "getBroadcast";
+    public static final String PendingIntentGetActKeyWord = "getActivity";
+    public static final String PendingIntentGetBrKeyWord = "getBroadcast";
     public static final String AlarmManagerSetKeyWord = "<android.app.AlarmManager: void set";
     public static final String PendingIntentSendKeyWord = "<android.app.PendingIntent: void send";
     public static final String IntentSenderSendIntentKeyWord = "<android.content.IntentSender: void sendIntent(";
@@ -98,7 +98,7 @@ public class MyConstant {
 
 
 public static final String GetActivity = "<android.app.PendingIntent: android.app.PendingIntent getActivity(";
-public static final String GetBroadcast = "<android.app.PendingIntent: android.app.PendingIntent getBroadcast("
+public static final String GetBroadcast = "<android.app.PendingIntent: android.app.PendingIntent getBroadcast(";
 
 
 // package intent into a PendingIntent
@@ -111,27 +111,26 @@ public static final String GetBroadcast = "<android.app.PendingIntent: android.a
     // send PendingIntent
     //public static final String ANDROID_APP_ACTIVITYOPTIONS_REQUESTUSAGETIMEREPORT = "<android.app.ActivityOptions: void requestUsageTimeReport(android.app.PendingIntent)>";
     //public static final String ANDROID_APP_ALARMMANAGER_SETALARMCLOCK = "<android.app.AlarmManager: void setAlarmClock(android.app.AlarmManager$AlarmClockInfo,android.app.PendingIntent)>";
-    public static final String AlarmManagerSetMethods = {"<android.app.AlarmManager: void setAndAllowWhileIdle(int,long,android.app.PendingIntent)>",
+    public static final String[] AlarmManagerSetMethods = {"<android.app.AlarmManager: void setAndAllowWhileIdle(int,long,android.app.PendingIntent)>",
     "<android.app.AlarmManager: void setExactAndAllowWhileIdle(int,long,android.app.PendingIntent)>",
         "<android.app.AlarmManager: void setExact(int,long,android.app.PendingIntent)>",
      "<android.app.AlarmManager: void setInexactRepeating(int,long,long,android.app.PendingIntent)>",
-     "<android.app.AlarmManager: void set(int,long,android.app.PendingIntent)>";
+     "<android.app.AlarmManager: void set(int,long,android.app.PendingIntent)>",
      "<android.app.AlarmManager: void setRepeating(int,long,long,android.app.PendingIntent)>",
-    "<android.app.AlarmManager: void setWindow(int,long,long,android.app.PendingIntent)>",
+    "<android.app.AlarmManager: void setWindow(int,long,long,android.app.PendingIntent)>"};
 
 
 
-        public static final String PendingIntentSendMethods = {"<android.app.PendingIntent: void send(android.content.Context,int,android.content.Intent,android.app.PendingIntent$OnFinished,android.os.Handler,java.lang.String,android.os.Bundle)>",
+        public static final String[] PendingIntentSendMethods = {"<android.app.PendingIntent: void send(android.content.Context,int,android.content.Intent,android.app.PendingIntent$OnFinished,android.os.Handler,java.lang.String,android.os.Bundle)>",
     "<android.app.PendingIntent: void send(android.content.Context,int,android.content.Intent,android.app.PendingIntent$OnFinished,android.os.Handler,java.lang.String)>",
     "<android.app.PendingIntent: void send(android.content.Context,int,android.content.Intent,android.app.PendingIntent$OnFinished,android.os.Handler)>",
     "<android.app.PendingIntent: void send(android.content.Context,int,android.content.Intent)>",
     "<android.app.PendingIntent: void send(int,android.content.Intent,android.app.PendingIntent$OnFinished,android.os.Handler)>",
     "<android.app.PendingIntent: void send()>",
-    "<android.app.PendingIntent: void send(int)>"
-        }
-    public static final String IntentSenderSendIntentMethods = {"<android.content.IntentSender: void sendIntent(android.content.Context,int,android.content.Intent,android.content.IntentSender$OnFinished,android.os.Handler)>";
-        "<android.content.IntentSender: void sendIntent(android.content.Context,int,android.content.Intent,android.content.IntentSender$OnFinished,android.os.Handler,java.lang.String)>";
-    }
+    "<android.app.PendingIntent: void send(int)>"};
+
+    public static final String[] IntentSenderSendIntentMethods = {"<android.content.IntentSender: void sendIntent(android.content.Context,int,android.content.Intent,android.content.IntentSender$OnFinished,android.os.Handler)>",
+        "<android.content.IntentSender: void sendIntent(android.content.Context,int,android.content.Intent,android.content.IntentSender$OnFinished,android.os.Handler,java.lang.String)>"};
 
 
 //<android.app.Activity: void startActivityFromChild(android.app.Activity,android.content.Intent,int,android.os.Bundle)>
