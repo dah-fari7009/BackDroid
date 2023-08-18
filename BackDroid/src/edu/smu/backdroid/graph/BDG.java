@@ -27,6 +27,7 @@ import edu.smu.backdroid.analysis.UnitWorker;
 import edu.smu.backdroid.structure.BoolObj;
 import edu.smu.backdroid.util.MyConstant;
 import edu.smu.backdroid.util.MyUtil;
+import edu.smu.backdroid.PortDetector;
 
 /**
  * BDG: BackwardDependenceGraph starting from the target parameter node
@@ -160,7 +161,9 @@ public class BDG {
          */
         InvokeExpr invokeexpr = UnitWorker.v().getInvokeExpr(initUnit);
         if (invokeexpr != null) {
-            List<Value> args = invokeexpr.getArgs();
+            List<Value> args = invokeexpr.getArgs().stream()
+                                                    .filter(arg -> isRelevantArg(arg))
+                                                    .collect(Collectors.toList()); //Here check if the arg is of type Intent or PendingIntent
             for (Value arg : args) {
                 MyUtil.printlnOutput(String.format("%s Arg: %s",
                         MyConstant.ForwardPrefix, arg.toString()),
@@ -174,6 +177,7 @@ public class BDG {
                 }
             }
         }
+        //TODO, for RAICC, only add the third parameter which is the intent
         
         /*
          * Add the initial node into graph, no matter the result is true or not.
@@ -196,6 +200,13 @@ public class BDG {
         }
         
         return result;
+    }
+
+    public boolean isRelevantArg(Value arg){
+        if(PortDetector.DETECTtype == MyConstant.DETECT_STARTACT){
+            return arg.getType().toString().equals("android.content.Intent") || arg.getType().toString().equals("androdi.app.PendingIntent");
+        }
+        return true; //by default, all args are relevant
     }
     
     public void addInitFieldNode(Unit unit, String msig) {
@@ -362,7 +373,7 @@ public class BDG {
             
             // Here argus here do not include the base variable
             List<Value> argus = ie.getArgs();
-            for (Value argu : argus) {
+            for (Value argu : argus) { //Is this even needed, tainting all the parameters? Maybe for path sensitivity if the parameters impact the return value?
                 this.addOneTaintValue(argu, msig, false);
             }
         }

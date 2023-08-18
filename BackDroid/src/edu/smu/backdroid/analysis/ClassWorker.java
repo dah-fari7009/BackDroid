@@ -223,7 +223,58 @@ public class ClassWorker {
                         }*/
                         if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
                             methodSig = null;
+                        }
                     }
+                    /*else if (unitstr.contains(MyConstant.GetActivity) || unitstr.contains(MyConstant.GetBroadcast)){
+                        System.out.println(unitstr);
+                        if(unit instanceof InvokeStmt){
+                            InvokeStmt stmt = (InvokeStmt)unit;
+                            InvokeExpr expr = stmt.getInvokeExpr();
+                            methodSig = expr.getMethod().getSignature();
+                        }
+                        else{
+                            //instantiation?
+                        }
+                        //TODO, will the ICC statement that it flows to as well, in case the intent is never started
+                        //e.g., Alarm.set(pi) --> pi = PI.getActivity(xx,xx,i,xx) --> i = new Intent(C.class)
+                        //we could start from the last statement and only taint the pending intent, then rely on the propagation? 
+                        if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
+                            methodSig = null;
+                    }*/
+                    else if (unitstr.contains(MyConstant.AlarmManagerSetKeyWord)){
+                        for(String m: MyConstant.AlarmManagerSetMethods){
+                            if(unitstr.contains(m)){
+                                methodSig = m;
+                                break;
+                            }
+                        }
+                        if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
+                            methodSig = null;
+                        }
+                    }
+
+                    else if (unitstr.contains(MyConstant.PendingIntentSendKeyWord)){
+                        for(String m: MyConstant.PendingIntentSendMethods){
+                            if(unitstr.contains(m)){
+                                methodSig = m;
+                                break;
+                            }
+                        }
+                        if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
+                            methodSig = null;
+                        }
+                    }
+
+                    else if (unitstr.contains(MyConstant.IntentSenderSendIntentKeyWord)){
+                        for(String m: MyConstant.IntentSenderSendIntentKeyWord){
+                            if(unitstr.contains(m)){
+                                methodSig = m;
+                                break;
+                            }
+                        }
+                        if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
+                            methodSig = null;
+                        }
                     }
                     
                     if (methodSig != null) {

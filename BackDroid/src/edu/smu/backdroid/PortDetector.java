@@ -271,12 +271,27 @@ public class PortDetector {
         else if (DETECTtype == MyConstant.DETECT_STARTACT) { //TODO: add RAICC apis as well (e.g., setExact)
             cmdcontent = String.format("cat %s " +
             "| grep -e \";.startActivity\" " +
+            "-e \"AlarmManager;.set\" " +
+            "-e \"PendingIntent;.send:(\" " +
+            "-e \"IntentSender;.sendIntent\" "+
+            "-e \"Notification;.setLatestEventInfo\" "+
+            //"-e \"PendingIntent;.getActivity\" " +
+            //"-e \"PendingIntent;.getBroadcast\" " +
             "-e \"Class descriptor\" " +
             "| grep -B 1 -e \";.startActivity\" " +
+            "-e \"AlarmManager;.set\" " +
+            "-e \"PendingIntent;.send:(\" " +
+            "-e \"IntentSender;.sendIntent\" "+
+            "-e \"Notification;.setLatestEventInfo\" "+
+            //"-e \"PendingIntent;.getActivity\" " +
+            //"-e \"PendingIntent;.getBroadcast\" " +
             "| grep \"Class descriptor\" " + 
            "| grep -o \"L.*;\"", DEXDUMPlog);
         }
         
+        //TODO: first search for ICC statements, then do a global search for unresolved.class in code and unresolve.name in resources
+        //likely do the same for actions for implicit intents as well?
+        //if we find an instance, we should go forward to see if it's used by any known statements??
         MyUtil.printlnOutput(String.format("%s grep cmd: %s",
                 MyConstant.ForwardPrefix, cmdcontent), MyConstant.DEBUG);
         List<String> classnames = MyUtil.grepDexDumpLogForClass(cmdcontent);
@@ -299,6 +314,9 @@ public class PortDetector {
             apiClassSet = (Set<String>) in.readObject();
             //TODO properly
             apiClassSet.add("android.content.SharedPreferences");
+            apiClassSet.add("android.app.PendingIntent");
+            apiClassSet.add("android.app.AlarmManager");
+            apiClassSet.add("android.content.IntentSender");
             //Add the androidx classes
         }
 

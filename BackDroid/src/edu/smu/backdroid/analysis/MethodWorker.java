@@ -665,7 +665,7 @@ public class MethodWorker {
                                 bdg.updateTargetIntentClasses(iie.getArg(3).toString(), true);
                             }
                             else if(raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setAction")){
-                                bdg.updateTargetIntentClasses(iie.getArg(1).toString(), true);
+                                bdg.updateTargetIntentClasses(iie.getArg(0).toString(), true);
                                 //TODO, should remove the base intent, but only in case where the intent is initialized without any parameters (todo)
                             }
                             else if(raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setData")){//TODO
@@ -676,7 +676,6 @@ public class MethodWorker {
                                 MyUtil.printlnOutput("Should remove empty intent");
                                 //bdg.updateTargetIntentClasses(base.toString(), false);
                             }
-
 
                         }
                         if (PortDetector.apiClassSet.contains(raw_cls_name)) { //assume true for startActivity
