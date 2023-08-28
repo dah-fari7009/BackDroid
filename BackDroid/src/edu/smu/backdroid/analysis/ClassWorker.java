@@ -272,6 +272,30 @@ public class ClassWorker {
                         if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
                             methodSig = null;
                     }
+
+                    //TODO handle notification properly, should start from notify() and propagate
+
+                    else if (unitstr.contains(MyConstant.NotificationKeyWord) || unitstr.contains(MyConstant.NotificationV4KeyWord)){
+                        for(String m: MyConstant.NotificationBuildMethods){
+                            if(unitstr.contains(m)){
+                                methodSig = m;
+                                break;
+                            }
+                        }
+                        if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
+                            methodSig = null;
+                    }
+
+                    else if (unitstr.contains(MyConstant.AndroidXNotificationKeyWord)){
+                        for(String m: MyConstant.AndroidXNotificationBuildMethods){
+                            if(unitstr.contains(m)){
+                                methodSig = m;
+                                break;
+                            }
+                        }
+                        if (PortDetector.DETECTtype != MyConstant.DETECT_STARTACT)
+                            methodSig = null;
+                    }
                     
                     if (methodSig != null) {
                         String msig = method.getSignature();

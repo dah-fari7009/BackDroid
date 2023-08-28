@@ -205,7 +205,7 @@ public class BDG {
 
     public boolean isRelevantArg(Value arg){
         if(PortDetector.DETECTtype == MyConstant.DETECT_STARTACT){
-            return arg.getType().toString().equals("android.content.Intent") || arg.getType().toString().equals("androdi.app.PendingIntent");
+            return arg.getType().toString().equals("android.content.Intent") || arg.getType().toString().equals("android.app.PendingIntent");
         }
         return true; //by default, all args are relevant
     }

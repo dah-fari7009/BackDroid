@@ -17,6 +17,9 @@ public class MyConstant {
     public static final String AlarmManagerSetKeyWord = "<android.app.AlarmManager: void set";
     public static final String PendingIntentSendKeyWord = "<android.app.PendingIntent: void send";
     public static final String IntentSenderSendIntentKeyWord = "<android.content.IntentSender: void sendIntent(";
+    public static final String NotificationKeyWord = "<android.app.Notification$";
+     public static final String NotificationV4KeyWord = "<android.support.v4.app.NotificationCompat$";
+    public static final String AndroidXNotificationKeyWord = "<androidx.core.app.NotificationCompat$";
 
     public static final String AndroidXKeyword = "<androidx.";
     public static final String AndroidKeyword = "<android";
@@ -132,6 +135,34 @@ public static final String GetBroadcast = "<android.app.PendingIntent: android.a
     public static final String[] IntentSenderSendIntentMethods = {"<android.content.IntentSender: void sendIntent(android.content.Context,int,android.content.Intent,android.content.IntentSender$OnFinished,android.os.Handler)>",
         "<android.content.IntentSender: void sendIntent(android.content.Context,int,android.content.Intent,android.content.IntentSender$OnFinished,android.os.Handler,java.lang.String)>"};
 
+
+        
+
+        //TODO should start from notify actually
+        public static final String[] NotificationBuildMethods = {"<android.app.Notification$Action$Builder: void <init>(android.graphics.drawable.Icon,java.lang.CharSequence,android.app.PendingIntent)>",
+    "<android.support.v4.app.NotificationCompat$Action$Builder: void <init>(android.graphics.drawable.Icon,java.lang.CharSequence,android.app.PendingIntent)>",
+   "<android.app.Notification$Action$Builder: void <init>(int,java.lang.CharSequence,android.app.PendingIntent)>",
+    "<android.support.v4.app.NotificationCompat$Action$Builder: void <init>(int,java.lang.CharSequence,android.app.PendingIntent)>",
+     //public static final String ANDROID_APP_NOTIFICATION$BUBBLEMETADATA$BUILDER_SETINTENT = "<android.app.Notification$BubbleMetadata$Builder: android.app.Notification$BubbleMetadata$Builder setIntent(android.app.PendingIntent)>";
+    //public static final String ANDROID_APP_NOTIFICATIONCOMPAT$BUBBLEMETADATA$BUILDER_SETINTENT = "<android.support.v4.app.NotificationCompat$BubbleMetadata$Builder: android.support.v4.app.NotificationCompat$BubbleMetadata$Builder setIntent(android.app.PendingIntent)>";
+     "<android.app.Notification$Builder: android.app.Notification$Builder addAction(int,java.lang.CharSequence,android.app.PendingIntent)>",
+    "<android.support.v4.app.NotificationCompat$Builder: android.support.v4.app.NotificationCompat$Builder addAction(int,java.lang.CharSequence,android.app.PendingIntent)>",
+   "<android.app.Notification$Builder: android.app.Notification$Builder setFullScreenIntent(android.app.PendingIntent,boolean)>",
+    "<android.support.v4.app.NotificationCompat$Builder: android.support.v4.app.NotificationCompat$Builder setFullScreenIntent(android.app.PendingIntent,boolean)>",
+     "<android.support.v4.app.NotificationCompat$Builder: android.support.v4.app.NotificationCompat$Builder setContentIntent(android.app.PendingIntent)",
+    "<android.app.Notification$Builder: android.app.Notification$Builder setContentIntent(android.app.PendingIntent)>"};
+
+    public static final String[] AndroidXNotificationBuildMethods = {
+     "<androidx.core.app.NotificationCompat$Action$Builder: void <init>(androidx.core.graphics.drawable.IconCompat,java.lang.CharSequence,android.app.PendingIntent,android.os.Bundle,androidx.core.app.RemoteInput[],boolean,int,boolean,boolean)>",
+        "<androidx.core.app.NotificationCompat$Action$Builder: void <init>(int,java.lang.CharSequence,android.app.PendingIntent)>",
+        "<androidx.core.app.NotificationCompat$Action$Builder: void <init>(int,java.lang.CharSequence,android.app.PendingIntent,android.os.Bundle,androidx.core.app.RemoteInput[],boolean,int,boolean)>",
+        "<androidx.core.app.NotificationCompat$Action$Builder: void <init>(int,java.lang.CharSequence,android.app.PendingIntent,android.os.Bundle,androidx.core.app.RemoteInput[],boolean,int,boolean,boolean)>",
+        "<androidx.core.app.NotificationCompat$Action: void <init>(androidx.core.graphics.drawable.IconCompat,java.lang.CharSequence,android.app.PendingIntent,android.os.Bundle,androidx.core.app.RemoteInput[],androidx.core.app.RemoteInput[],boolean,int,boolean,boolean)>",
+        "<androidx.core.app.NotificationCompat$Action: void <init>(int,java.lang.CharSequence,android.app.PendingIntent)>",
+        "<androidx.core.app.NotificationCompat$Action: void <init>(int,java.lang.CharSequence,android.app.PendingIntent,android.os.Bundle,androidx.core.app.RemoteInput[],androidx.core.app.RemoteInput[],boolean,int,boolean)>",
+        "<androidx.core.app.NotificationCompat$Action: void <init>(int,java.lang.CharSequence,android.app.PendingIntent,android.os.Bundle,androidx.core.app.RemoteInput[],androidx.core.app.RemoteInput[],boolean,int,boolean,boolean)>",
+        "<androidx.core.app.NotificationCompat$Builder: androidx.core.app.NotificationCompat$Builder setContentIntent(android.app.PendingIntent)>"
+        };
 
 //<android.app.Activity: void startActivityFromChild(android.app.Activity,android.content.Intent,int,android.os.Bundle)>
 //<android.app.Activity: void startActivityFromChild(android.app.Activity,android.content.Intent,int)>

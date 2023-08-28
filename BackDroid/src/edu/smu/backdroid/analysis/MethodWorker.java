@@ -218,6 +218,10 @@ public class MethodWorker {
      * 
      * TODO Static fields may appear in any function
      * TODO Shall use "search" to locate which methods contain a field
+     * TODO Resolve the top node
+     * TODO restrict the scope of tracked constraints (only need the constraints flowing in result)
+     * TODO restrict the tainted variables (especially for method parameters)
+     * TODO build structure for constraint collection
      * 
      * @param unit
      * @param msig
@@ -535,12 +539,12 @@ public class MethodWorker {
                 Value cond = is.getCondition();
                 MyUtil.printlnOutput(String.format("%s Found conditional statement inside %s", is.toString(), msig));
                 BDGUnit node = bdg.addNormalNode(prev_unit, msig, isReturn, isStaticTrack);
-                if(!foundTaintInBranch){
+                if(!foundTaintInBranch){ //No new taint found in the current branch
                     //TODO, add a if true or something
                     //or add but grey out? //what about the statements in that block? Should we store them or something
                     MyUtil.printlnOutput("No definition tainted in this branch, adding but marking as unneeded for now ...", MyConstant.DEBUG);
                     node.setNeeded(false);
-                    foundTaintInBranch = false;
+                    foundTaintInBranch = false; //why?
                 }
                 //This is the end of the block (branching condition)
                 //We put this break here so that we can add the edge first before returning
@@ -681,6 +685,7 @@ public class MethodWorker {
                         if (PortDetector.apiClassSet.contains(raw_cls_name)) { //assume true for startActivity
                             //TODO, probably androidx isn't in this, so also augment it
                             // Taint all parameters
+                            //TODO, do we need to taint all parameters, only relevant ones for APIs of interest!!
                             bdg.addTaintValue(ie, msig); //okay??
                             //Here mark the register for intent
                             //If class register, check if init? setComponentName ...

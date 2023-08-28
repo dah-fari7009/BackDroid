@@ -274,7 +274,10 @@ public class PortDetector {
             "-e \"AlarmManager;.set\" " +
             "-e \"PendingIntent;.send:(\" " +
             "-e \"IntentSender;.sendIntent\" "+
-            "-e \"Notification;.setLatestEventInfo\" "+
+            //"-e \"$Builder;.setContentIntent:\" "+
+            "-e \"NotificationManager;.notify\" "+
+            "-e \"NotificationManagerCompat;.notify\" "+
+            //"-e \"Notification;.setLatestEventInfo\" "+
             //"-e \"PendingIntent;.getActivity\" " +
             //"-e \"PendingIntent;.getBroadcast\" " +
             "-e \"Class descriptor\" " +
@@ -282,7 +285,10 @@ public class PortDetector {
             "-e \"AlarmManager;.set\" " +
             "-e \"PendingIntent;.send:(\" " +
             "-e \"IntentSender;.sendIntent\" "+
-            "-e \"Notification;.setLatestEventInfo\" "+
+            //"-e \"$Builder;.setContentIntent:\" "+
+            "-e \"NotificationManager;.notify\" "+
+            "-e \"NotificationManagerCompat;.notify\" "+
+            //"-e \"Notification;.setLatestEventInfo\" "+
             //"-e \"PendingIntent;.getActivity\" " +
             //"-e \"PendingIntent;.getBroadcast\" " +
             "| grep \"Class descriptor\" " + 
@@ -335,11 +341,11 @@ public class PortDetector {
                 MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
                 continue;
             }*/
-            /*if(!classname.equals("com.sec.android.easyMover.ui.RecvTransPortActivity")){
+            if(!classname.equals("com.sec.android.easyMover.ui.CompletedActivity$2")){
                 //("com.sec.android.easyMover.migration.GoogleLoginHelper")
                 MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
                 continue;
-            }*/
+            }
             /*if(!classname.equals("com.sec.android.easyMover.migration.GoogleLoginHelper")){
             //("com.sec.android.easyMover.ui.MainActivity")){
                 MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
