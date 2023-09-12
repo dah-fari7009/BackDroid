@@ -323,6 +323,14 @@ public class PortDetector {
             apiClassSet.add("android.app.PendingIntent");
             apiClassSet.add("android.app.AlarmManager");
             apiClassSet.add("android.content.IntentSender");
+            apiClassSet.add("android.support.v7.app.AppCompatActivity");
+            apiClassSet.add("java.util.Collection");
+            apiClassSet.add("android.support.v7.app.AppCompatDelegateImpl");
+            apiClassSet.add("android.support.v4.util.ArrayMap");
+            apiClassSet.add("android.support.v4.util.MapCollections");
+            apiClassSet.add("android.support.v4.util.MapCollections$ValuesCollection");
+            apiClassSet.add("android.support.v4.app.NavUtils");
+            apiClassSet.add("android.support.v7.appcompat.R");
             //Add the androidx classes
         }
 

@@ -27,4 +27,7 @@ public interface BDGEdgeType {
     
     public static final int SELFLOOP_EDGE = 3;
 
+    
+    public static final int BRANCHING_EDGE = 4;
+
 }

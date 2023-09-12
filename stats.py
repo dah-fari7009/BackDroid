@@ -16,8 +16,8 @@ log_dir = sys.argv[3] if len(sys.argv) > 3 else apk_dir
 #out_dir = apk_dir
 
 #log_file_id = "LOG"
-dyn_log_dir = "/data/faridah/experiments/all_logs"
-log_file_id = "DEBUG_INTERMEDIATE_LOG"
+dyn_log_dir = "/data/Faridah/experiments/all_logs"
+log_file_id = "DEBUG_ACTION_LOG"
 ape_id="APE"
 manual_id="MANUAL"
 file_ext="log"
@@ -68,6 +68,7 @@ def write_results(data, sheetname, summary=False):
     #writer.close()
 
 
+
 #Get package names from all apks in folder
 def get_package_names(apk_path):
     package_names = {}
@@ -105,6 +106,46 @@ def build_act(full_name):
     return f"{splits[0]}{splits[1]}" if splits[1].startswith(".") else splits[1]
 
 
+def get_implicit_intents_from_manifest(apk_path, activities):
+    #run script to get the activities and the filters?
+    cmd = ["sh", "./scripts/manifest.sh", f"{apk_path}"]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    intents_map = {}
+    activity = None
+    action = None
+    for line in p.stdout:
+        if b"E: activity (" in line:
+            activity = "N/A"
+        if b"E: action (" in line:
+            action = "N/A"
+        elif b"A: android:name(" in line: #android:name(0x01010003)="com.sec.android.easyMover.ui.IntroduceSamsungActivity"
+            if activity == "N/A": #seen activity 
+                match = line.decode('utf-8').split("\"")[1]
+                if match in activities:
+                    activity = match
+            elif not activity is None: #activity is set and we see name
+                if action == "N/A":
+                    match = line.decode('utf-8').split("\"")[1]
+                    action = match
+                    if action in intents_map:
+                        intents_map[action].append(activity)
+                    else:
+                        intents_map[action] = [activity]
+                else: #saw another name, but no action
+                    activity = None
+                    action = None
+            
+    p.wait()
+    return intents_map
+
+def get_implicit_full(apk_path, activities):
+    implicit_activities = get_implicit_intents_from_manifest(apk_path, activities)
+    implicit_full = set()
+    for key,val in implicit_activities.items():
+        implicit_full.update(val)
+    return implicit_full
+
 def get_reached_activities(package_name):
     reached_activities = set()
     key = package_name
@@ -138,16 +179,32 @@ def get_reached_activities(package_name):
     return reached_activities
 
 
-def breakdown_for_notfound(apk_name, found_activities, reached_activities, all_activities):
+def breakdown_for_notfound(apk_name, found_activities, reached_activities, implicit_activities, all_activities):
+    found_activities = [act for act in found_activities if act in all_activities]
     if len(found_activities) == len(all_activities):
         return "N/A"
-    print(all_activities)
-    print(found_activities)
-    print(reached_activities)
-    exit(1)
-    notfound_activities = [act for act in all_activities if (act not in reached_activities and act not in found_activities )] #all activities not found that were not reached (don't care about reached)
+    #print(all_activities)
+    #print(found_activities)
+    #print(reached_activities)
+    #exit(1)
+    unreached_tot = len(all_activities) - len(reached_activities)
+
+    total = len(all_activities)
+    resolved = len(found_activities)
+    implicit = len(implicit_activities)
+    #print(f"Out of {total} activities, {unreached_tot} unreached, {resolved}/{total} explicit resolved, {implicit}/{total} implicit")
+    new_set = set()
+    new_set.update(implicit_activities)
+    new_set.update(found_activities)
+    #implicit_full.update(data.keys())
+    #print(f"Max resolvable: {len(new_set)}/{total}")
+
+    max_potential = [act for act in new_set if act not in reached_activities]
+    #print(f"Max unreached resolvable: {len(max_potential)}/{unreached_tot}")
+
+    notfound_activities = [act for act in all_activities if (act not in reached_activities and act not in max_potential )] #all activities not found that were not reached (don't care about reached)
     num = len(notfound_activities)
-    print(f"{num} not found activities by the tool")
+    #print(f"{num}/{unreached_tot} not found activities by the tool")
     (alternative, tool_limitations) = ([], [])
     if num > 0:
         #search for class definition in file
@@ -166,7 +223,8 @@ def breakdown_for_notfound(apk_name, found_activities, reached_activities, all_a
             else:
                 #print(f"Couldn't find {act}")
                 alternative.append(act)
-        print(f"Breakdown (#alt: {len(alternative)}, #lim: {len(tool_limitations)})")
+        #print(f"Potential alt: {alternative}")
+        print(f"Breakdown of {unreached_tot} (#pot: {len(max_potential)}, #alt: {len(alternative)}, #lim: {len(tool_limitations)})")
     return "DONE"
 
 
@@ -211,7 +269,7 @@ def parse_output(log_file, reached_activities, activities, services, receivers):
             #print(f"Intermediate targets {targets}")
             to_resolve = [val for val in targets if val not in activities]
             #if (len(to_resolve) > 0):
-                #print(f"Extra targets to resolve: {len(to_resolve)}")
+            #    print(f"Extra targets to resolve: {len(to_resolve)} {to_resolve}")
             targets = [val for val in targets if val in activities]
             #print(f"Obtained targets {targets}\n")
         elif b"Tail nodes" in line: #[BDGUnit [msig=<com.sec.android.easyMover.ui.MainActivity: void onResume()>, unit=r0 := @this: com.sec.android.easyMover.ui.MainActivity], BDGUnit [msig=<com.sec.android.easyMover.ui.MainActivity: void onResume()>, unit=r0 := @this: com.sec.android.easyMover.ui.MainActivity], BDGUnit [msig=<com.sec.android.easyMover.ui.MainActivity: void onResume()>, unit=r0 := @this: com.sec.android.easyMover.ui.MainActivity], BDGUnit [msig=<com.sec.android.easyMover.ui.MainActivity: void onResume()>, unit=r0 := @this: com.sec.android.easyMover.ui.MainActivity], BDGUnit [msig=<com.sec.android.easyMover.ui.MainActivity: void onResume()>, unit=r0 := @this: com.sec.android.easyMover.ui.MainActivity]]
@@ -327,6 +385,7 @@ def main():
             #Get info about the apk
             package_name, activities, services, receivers = get_package_names(apk_path)
             num_activities = len(activities)
+            #continue
             #print(f"Found apk {apk_path} => {package_name}")
             log_file = f"{log_dir}/{log_file_id}_{package_name}.log"
             if(os.path.exists(log_file)):
@@ -334,6 +393,7 @@ def main():
                 #print(f"Found log file: {log_file}")
                 reached_activities = get_reached_activities(package_name)
                 num_reached_activities = len(reached_activities)
+                implicit_full = get_implicit_full(apk_path, activities)
                 #print(f"Found {num_reached_activities} reached activities for {apk_path}")
                 (data, exc) = parse_output(log_file, reached_activities, activities, services, receivers)
                 summary["Apk"].append(apk_name)
@@ -341,7 +401,7 @@ def main():
                 summary["#Activities (total)"].append(num_activities)
                 summary["#Activities (unreached)"].append((num_activities-num_reached_activities))
                 if exc is None:
-                    info = breakdown_for_notfound(apk_name, data['Activity'], reached_activities, activities)
+                    info = breakdown_for_notfound(apk_name, data['Activity'], reached_activities, implicit_full, activities)
                     summary["#Activities (resolved ICC)"].append(f"='{sheet_name}'!A2")
                     summary["%Activities (resolved ICC)"].append(f"=(100 * E{index}/C{index})")
                     summary["#Unreached activities (resolved ICC)"].append(f"='{sheet_name}'!H2")

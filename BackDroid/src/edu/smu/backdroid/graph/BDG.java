@@ -18,6 +18,7 @@ import soot.jimple.ArrayRef;
 import soot.jimple.BinopExpr;
 import soot.jimple.CastExpr;
 import soot.jimple.Constant;
+import soot.jimple.ConditionExpr;
 import soot.jimple.FieldRef;
 import soot.jimple.InstanceFieldRef;
 import soot.jimple.InstanceInvokeExpr;
@@ -25,6 +26,7 @@ import soot.jimple.InvokeExpr;
 import soot.jimple.StaticFieldRef;
 import edu.smu.backdroid.analysis.FieldWorker;
 import edu.smu.backdroid.analysis.UnitWorker;
+import edu.smu.backdroid.symbolic.*;
 import edu.smu.backdroid.structure.BoolObj;
 import edu.smu.backdroid.util.MyConstant;
 import edu.smu.backdroid.util.MyUtil;
@@ -50,6 +52,9 @@ public class BDG {
     private Set<String> TARGET_INTENT_CLASSES;
     //TODO here store list of intent data (action, category, URI?)
     private boolean needTargetUpdate;
+
+    //TODO add predicate, function to set, reset and copy predicate
+    //Switch taint set to map of ids to pointer objects?
     
     /**
      * Store nodes in a layered manner
@@ -95,6 +100,7 @@ public class BDG {
      * A global taint map for the whole graph
      */
     protected Map<String, Set<String>> taintMap;
+    protected Map<String, Map<String, SymbolicObj>> symbMap;
     
     /**
      * Save the String-based fields and their original StaticFieldRef
@@ -117,6 +123,7 @@ public class BDG {
         this.nodeList = new ArrayList<BDGUnit>();
         this.edgeSet = new HashSet<BDGEdge>();
         this.taintMap = new HashMap<String, Set<String>>();
+        this.symbMap = new HashMap<String, Map<String, SymbolicObj>>();
         this.objectFieldSet = new HashSet<String>();
         this.normalTails = new HashSet<BDGUnit>();
         this.fakeTails = new HashSet<BDGUnit>();
@@ -130,7 +137,9 @@ public class BDG {
          * TODO We shall have a field map for each path?
          */
         Set<String> fieldset = new HashSet<String>();
+        Map<String, SymbolicObj> symbFieldSet = new HashMap<String, SymbolicObj>();
         this.taintMap.put(MyConstant.GLOBALFIELD, fieldset);
+        this.symbMap.put(MyConstant.GLOBALFIELD, symbFieldSet);
         
         /*
          * For handling static fields
@@ -185,7 +194,7 @@ public class BDG {
          * Even if all parameters are constants, we then can use this node to generate results.
          */
         
-        this.addBDGNote(initNode, false);
+        this.addBDGNode(initNode, false);
         
         MyUtil.printlnOutput(String.format("%s addInitNode: %s",
                 MyConstant.NormalPrefix, initUnit.toString()),
@@ -216,7 +225,7 @@ public class BDG {
                 MyConstant.DEBUG);
         
         BDGUnit node = new BDGUnit(msig, unit);
-        this.addBDGNote(node, true);
+        this.addBDGNode(node, true);
         
         // TODO checkTailNode
     }
@@ -238,7 +247,8 @@ public class BDG {
                 MyConstant.NormalPrefix, unit.toString()),
                 MyConstant.DEBUG);
         BDGUnit src_node = new BDGUnit(msig, unit);
-        this.addBDGNote(src_node, isStaticTrack);
+        src_node.setPredicate(dst_node.getPredicate());
+        this.addBDGNode(src_node, isStaticTrack);
         
         // create the edge from src to dst
         this.createBDGEdge(src_node, dst_node, isStaticTrack);
@@ -258,10 +268,12 @@ public class BDG {
             BoolObj isReturn, final boolean isStaticTrack) {
         // retrieve the last node
         BDGUnit dst_node = this.getLastNode(isStaticTrack);
+        Predicate predicate = dst_node.getPredicate();
         
         // create a new node as the source node
         BDGUnit src_node = new BDGUnit(msig, unit);
-        this.addBDGNote(src_node, isStaticTrack);
+        src_node.setPredicate(dst_node.getPredicate());
+        this.addBDGNode(src_node, isStaticTrack);
         
         // create the edge from src to dst
         if (isReturn.getValue()) {
@@ -279,6 +291,38 @@ public class BDG {
         }
         
         return src_node;
+    }
+
+     /**
+     * For branching node creation, with no return edge
+     * 
+     * @param unit
+     * @param msig
+     * @return
+     */
+
+    public BDGUnit addBranchingNode(Unit unit, String msig, Predicate predicate, final boolean isStaticTrack){
+        //retrieve the last node
+        BDGUnit dst_node = this.getLastNode(isStaticTrack);
+
+        //create a new node as source node
+        MyUtil.printlnOutput(String.format("%s addNormalNode: %s",
+                MyConstant.NormalPrefix, unit.toString()),
+                MyConstant.DEBUG);
+        BDGUnit src_node = new BDGUnit(msig, unit);
+        Predicate combined = Predicate.combine(Predicate.Operator.AND, dst_node.getPredicate(), predicate);
+        //TODO essentially overwritting the node (maybe should traverse the edge or something)
+        MyUtil.printlnOutput(String.format("[PREDICATE] %s added to unit predicate",combined));
+        src_node.setPredicate(combined);
+        this.addBDGNode(src_node, isStaticTrack);
+
+        // create the edge from src to dst
+        this.createBDGEdge(src_node, dst_node, isStaticTrack);
+        
+        //node.updatePredicate(AND(lastNode.getPredicate()), buildPredicate(cond)); //will be whatever is stored in the previous node (deal with it when doing add)
+                    
+        return src_node;
+        
     }
     
     public void setTailNode(BDGUnit node, final boolean isStaticTrack) {
@@ -312,7 +356,6 @@ public class BDG {
         if (this.nodeList.size() == 1)
             setTailNode(this.initNode, false);
     }
-
     
     /**
      * The basic function for adding various Value (including those Expr) to be taints
@@ -396,20 +439,7 @@ public class BDG {
             this.addOneTaintValue(value, msig, mustUpdateTarget);
         }
     }
-    
-    /**
-     * The actual internal function for adding one raw Value to be taints.
-     * 
-     * Just need to determine Constant or not.
-     * But how to handle fields and arrays is a key problem.
-     * Array must be handled here, because it may be used in BinopExpr.
-     * 
-     * TODO any other Ref?
-     * 
-     * @param value The Value here does not contain complex structures.
-     * @param msig
-     * @return False if the Value is not added
-     */
+
     private boolean addOneTaintValue(Value value, String msig, boolean mustUpdateTarget) {
         if (value == null)
             return false;
@@ -417,6 +447,7 @@ public class BDG {
         if (value instanceof Constant)
             return false;
         
+        Map<String, SymbolicObj> symbMap = this.getSymbMap(msig);
         /*
          * Handle fields
          */
@@ -519,6 +550,29 @@ public class BDG {
                 MyConstant.NormalPrefix, value),
                 MyConstant.DEBUG);
     }
+
+    public void addSymbValue(String value, String msig) {
+        this.getSymbMap(msig).put(value, new SymbolicObj(value));
+        MyUtil.printlnOutput(String.format("%s Add %s to the method symb set",
+                MyConstant.NormalPrefix, value),
+                MyConstant.DEBUG);
+    }
+
+    public void updateSymbValue(String key, Value newValue, String msig){
+
+        Map<String, SymbolicObj> symbMap = getSymbMap(msig);
+        SymbolicObj obj = symbMap.get(key);
+        String oldValue = "";
+        if(obj != null){
+            oldValue = obj.getValue();
+            obj.setValue(newValue.toString());
+        }
+        symbMap.remove(key); //remove the old key
+
+        MyUtil.printlnOutput(String.format("%s Updating the method symb set %s --> %s",
+                    MyConstant.NormalPrefix, oldValue, newValue),
+                    MyConstant.DEBUG);
+    }
     
     /**
      * Four cases:
@@ -588,6 +642,71 @@ public class BDG {
             updateTargetIntentClasses(value.toString(), false);
         }
     }
+
+    /**
+     * Get or create symbolic object associated with key
+     */
+    public SymbolicObj getSymbObj(String key, String msig){
+        SymbolicObj obj = getSymbMap(msig).get(key);
+        if(obj == null){
+            obj = new SymbolicObj(key);
+            getSymbMap(msig).put(key, obj); //update map
+        }
+        return obj;
+    }
+
+    public Predicate buildPredicate(ConditionExpr expr, String msig, boolean trueBranch){
+        //Get operator from condition
+        //Get symb object for left 
+
+        SymbolicObj left = getOrBuildSymbObj(expr.getOp1(), msig),
+                    right = getOrBuildSymbObj(expr.getOp2(), msig);
+        //Get symb object for right
+        SymbolicExprPredicate sPredicate = new SymbolicExprPredicate(SymbolicExpr.combine(SymbolicExpr.getOperatorFromCond(expr), left, right));
+        return trueBranch ? Predicate.combine(Predicate.Operator.NONE, sPredicate): Predicate.combine(Predicate.Operator.NOT, sPredicate);
+        
+        //new Predicate.combine(Predicate.Operator.NOT, new SymbolicExpr(left, right, op));
+        //Update the predicate
+        //combine the predicate from previous node with newly added node (in addNode)
+        //if the node was already visited, should be a branching, so we'll retrieve stored predicate and update the operator to 
+    }
+
+    public SymbolicObj getOrBuildSymbObj(Value val, String msig){
+        String key = val.toString(); //get key from value
+        SymbolicObj obj = getSymbMap(msig).get(key);
+        //Want symbolic representation for object
+        if(obj == null){
+            obj = new SymbolicObj(key);
+            getSymbMap(msig).put(key, obj); //update map
+        }
+        MyUtil.printlnOutput(String.format("Adding symbolic variable %s --> %s", key, obj));
+         return obj;
+         /*for(ValueBox used: cond.getUseBoxes()){
+                        Value v = used.getValue();
+                        if(v instanceof Local || v instanceof ArrayRef || v instanceof StaticFieldRef || v instanceof InstanceFieldRef)
+                            bdg.addTaintValue(v, msig);
+                            //here need to track variable symbolically
+                            //bdg.addSymbTaintValue(v, msig);
+                        else MyUtil.printlnOutput(String.format("Found something %s that doesn't map to a var in %s", v, is.toString()));
+                    }
+                    */
+    }
+
+     /**
+     * Get or Create a symbolic map for a particular method
+     * 
+     * @param methodName
+     * @return
+     */
+    public Map<String, SymbolicObj> getSymbMap(String methodName) {
+        Map<String, SymbolicObj> resMap = this.symbMap.get(methodName);
+        // initialize
+        if (resMap == null){
+            resMap = new HashMap<String,SymbolicObj>();
+            this.symbMap.put(methodName, resMap);
+        }
+        return resMap;
+    }
     
     /**
      * Get or Create a taint set for a particular method
@@ -595,10 +714,15 @@ public class BDG {
      * @param methodName
      * @return
      */
+
+    public Set<String> getSymbSet(String methodName) {
+        return getSymbMap(methodName).keySet();
+    }
+
     public Set<String> getTaintSet(String methodName) {
+        //return getSymbMap(methodName).keySet();
         Set<String> res_set = this.taintMap.get(methodName);
         
-        // initialize
         if (res_set == null) {
             res_set = new HashSet<String>();
             this.taintMap.put(methodName, res_set);
@@ -619,7 +743,9 @@ public class BDG {
     public Set<SootClass> getAllFieldClasses() {
         Set<SootClass> result = new HashSet<SootClass>();
         
-        Set<String> fieldset = getTaintSet(MyConstant.GLOBALFIELD);
+        Set<String> fieldset = //getSymbSet(MyConstant.GLOBALFIELD);
+        getTaintSet(MyConstant.GLOBALFIELD);
+        //Map<String, SymbolicObj> fieldMap = getSymbMap(MyConstant.GLOBALFIELD);
         for (String str_field : fieldset) {
             MyUtil.printlnOutput(String.format("%s getAllFieldClasses: %s",
                     MyConstant.NormalPrefix, str_field),
@@ -643,7 +769,7 @@ public class BDG {
      * 
      * @param node
      */
-    private void addBDGNote(BDGUnit node, final boolean isStaticTrack) {
+    private void addBDGNode(BDGUnit node, final boolean isStaticTrack) {
         if (isStaticTrack)
             this.fieldNodes.add(node);
         else

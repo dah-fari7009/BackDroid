@@ -8,6 +8,7 @@ import edu.smu.backdroid.structure.CallerContainer;
 import edu.smu.backdroid.structure.ParaContainer;
 import edu.smu.backdroid.structure.TaintContainer;
 import edu.smu.backdroid.structure.TrackContainer;
+import edu.smu.backdroid.symbolic.*;
 import edu.smu.backdroid.util.MyConstant;
 import edu.smu.backdroid.util.MyUtil;
 
@@ -33,6 +34,7 @@ import soot.Local;
 import soot.ValueBox;
 import soot.jimple.ArrayRef;
 import soot.jimple.DefinitionStmt;
+import soot.jimple.ConditionExpr;
 import soot.jimple.Expr;
 import soot.jimple.InstanceFieldRef;
 import soot.jimple.StaticFieldRef;
@@ -223,8 +225,16 @@ public class MethodWorker {
      * TODO restrict the tainted variables (especially for method parameters)
      * TODO build structure for constraint collection
      * 
-     * @param unit
-     * @param msig
+     * 
+     * TODO reimplement with if statement as the recursion point?
+     * TODO merge should be done when we visit node that was already seen and then propgate
+     * TODO constraint should be at the top of the method since going backwards
+     * think about if we also need per unit tracking?
+     * Maybe if we use pointers for the constraints? cond AND Constraints(next-node), this way it will be automatically updated
+     * and when we reach a join point i.e., a if statement with two successors (, we can update the statement to be whatever OR not(cond) and Constraints(other branch
+     * ))
+     * it might be enough to just store the last constraint (i.e, postcondition)
+     * everytime we update post condition but also update the constraint attached to the unit , so we're keeping two pointers, one mutable depending on the branch (postcondition when we have multiple predecessors)
      * @param body
      * @param bdg
      * @param cur_block
@@ -246,6 +256,7 @@ public class MethodWorker {
             return;
         if (deadEntryMethods.size() >= MyConstant.MAX_DEAD_ENTRYR_NUM)
             return;
+        //TODO if max depth aux return;
         if(msig.startsWith("android.") || msig.startsWith("androidx."))
             return;
 
@@ -277,12 +288,14 @@ public class MethodWorker {
         // For set a normal edge or a return edge
         BoolObj isReturn = new BoolObj();
         
-        /**
-         * If unit is null, it means we need to taint the return statement.
-         */
+        
         //boolean isFromInside = false;
         /*if(cur_block != null && unit == null) //top of the block in recursion?
             return;*/
+
+        /**
+         * If unit is null, it means we need to taint the return statement.
+         */
         if (cur_block == null && (unit == null || unit.equals(MyConstant.FLAG_STMT))) {
             isFromInside = true;
             isReturn.setValue(true);
@@ -538,34 +551,84 @@ public class MethodWorker {
                 IfStmt is = (IfStmt) prev_unit;
                 Value cond = is.getCondition();
                 MyUtil.printlnOutput(String.format("%s Found conditional statement inside %s", is.toString(), msig));
-                BDGUnit node = bdg.addNormalNode(prev_unit, msig, isReturn, isStaticTrack);
+                BDGUnit lastNode = bdg.getLastNode(isStaticTrack);
+                BDGUnit node;
+                Predicate predicate;
+
+                if(visitedBlocks.contains(cur_block.getIndexInMethod())){
+                    MyUtil.printlnOutput("Already visited current block "+cur_block.getIndexInMethod());
+
+                    //TODO make sure that lastNode is the node before, not current
+                    //node.updatePredicate(OR(AND(lastNode.getPredicate(), buildPredicate(NEQ, cond)), node.getPredicate()))
+                    //here is a merge point? need to propagate through the bdg
+                    //will be predicate OR (saved constraint )
+                    //bdg.propagate();
+                    //nah still needed for merging (we'll be collecting the constraints that have been assigned to every unit and combining them)
+                    //once we're done with the propagation, we return here and we can set the constraint for the if to neq(cond) and everything we saw in previous units
+
+
+                    //should the recursion be for every if that way we always come back at the bottom and can update it?
+                    //when we see a if statement, we do cond(if) AND getConstraint(prev_unit)
+                    //MAYBE we don't even need the propagation, if we reset the constraint before the branching point,
+                    /**
+                     * that means the current constraint is only what comes before the if (in the method) which is shared between the two
+                     * and we're using SSA form so there"s no redefinition or anything
+                     * so we could build our predicate with the neq branch AND the current predicate ?
+                     * LOOKS LIKE WE NEED per unit constraints or rather per edge?
+                     * OH WAIT, here's the case of a if we already reached so 
+                     * nvm
+                     */
+                    predicate = bdg.buildPredicate((ConditionExpr)cond, msig, false);
+                    //TODO use outgoingedges to find the node if it already exists
+                    node = bdg.addBranchingNode(prev_unit, msig, predicate, isStaticTrack);
+                    if(!foundTaintInBranch){ //No new taint found in the current branch
+                        //TODO, add a if true or something
+                        //or add but grey out? //what about the statements in that block? Should we store them or something
+                        MyUtil.printlnOutput("No definition tainted in this branch, adding but marking as unneeded for now ...", MyConstant.DEBUG);
+                        node.setNeeded(false);
+                        foundTaintInBranch = true;//false; //why?
+                    }
+                    return;
+                }
+                
                 if(!foundTaintInBranch){ //No new taint found in the current branch
                     //TODO, add a if true or something
                     //or add but grey out? //what about the statements in that block? Should we store them or something
                     MyUtil.printlnOutput("No definition tainted in this branch, adding but marking as unneeded for now ...", MyConstant.DEBUG);
-                    node.setNeeded(false);
-                    foundTaintInBranch = false; //why?
-                }
-                //This is the end of the block (branching condition)
-                //We put this break here so that we can add the edge first before returning
-                if(visitedBlocks.contains(cur_block.getIndexInMethod())){
-                    MyUtil.printlnOutput("Already visited current block "+cur_block.getIndexInMethod());
-                    return;
+                    //node.setNeeded(false);
+                    foundTaintInBranch = true;//false; //why?
                 }
                 if(foundTaintInBranch){
                 //Todo, special conditional edge
                 //How do we know if true or false, we can check whether the target matches the last node but it might not be at the top
                 //we could store the prev prev unit (last unit we saw before current and check if it matches target)
                 //Also we need to convert this into explainable condition
+                    
                     isThisStmtTainted = true;
+                    predicate = bdg.buildPredicate((ConditionExpr)cond, msig, true);
+                    node = bdg.addBranchingNode(prev_unit, msig, predicate, isStaticTrack);
                     for(ValueBox used: cond.getUseBoxes()){
                         Value v = used.getValue();
                         if(v instanceof Local || v instanceof ArrayRef || v instanceof StaticFieldRef || v instanceof InstanceFieldRef)
                             bdg.addTaintValue(v, msig);
+                            //here need to track variable symbolically
+                            //bdg.addSymbTaintValue(v, msig);
                         else MyUtil.printlnOutput(String.format("Found something %s that doesn't map to a var in %s", v, is.toString()));
                     }
+                    //node.updatePredicate(AND(lastNode.getPredicate()), buildPredicate(cond)); //will be whatever is stored in the previous node (deal with it when doing add)
+                    
+                    //need to update the constant here
+                    //bdg.updateConstraint(AND(bdg.getConstraint(), cond));
+                    //Does it have to be tied to a unit? or the entire bdg
+                    //true and pointer(r6) == 0
+                    //once I see an assignment to r6, either append the assignment as a constraint (r6 == xx) or rewrite the value of r6 in the constraint
+                    //for the latter, we would have r6 --> value (and we update the value with the matching name), we're going backward and SSA so we're not going to see r6 again
+                    //I guess we need an overall map from ids to values and the constraints will be made of objects which resolve to the value?
+                    //Maybe a TRUE and id_1 == 0 and another map with id_1 --> r6 ?
                     //foundTaintInBranch = false; //reset the tracker
                     //maybe we shouldn't reset it actually
+
+                    
                 }
             }
 
@@ -680,13 +743,14 @@ public class MethodWorker {
                                 MyUtil.printlnOutput("Should remove empty intent");
                                 //bdg.updateTargetIntentClasses(base.toString(), false);
                             }
+                            bdg.addTaintValue(ie, msig); //okay??
 
                         }
                         if (PortDetector.apiClassSet.contains(raw_cls_name)) { //assume true for startActivity
                             //TODO, probably androidx isn't in this, so also augment it
                             // Taint all parameters
                             //TODO, do we need to taint all parameters, only relevant ones for APIs of interest!!
-                            bdg.addTaintValue(ie, msig); //okay??
+                            //bdg.addTaintValue(ie, msig); //okay??
                             //Here mark the register for intent
                             //If class register, check if init? setComponentName ...
                             //resolve the value, and check for entry in map
@@ -816,8 +880,14 @@ public class MethodWorker {
                         //do the target case first?
                         BDGUnit lastNode = bdg.getLastNode(isStaticTrack);
                         Block b;
+                        //Get post condition before branching
+                        //Predicate postCondition = lastNode.getPredicate();
                         for(int i = 1; i < preds.size(); i ++){ //can be more than one
                             b = preds.get(i);
+                        //need function to get constraint so far + reset
+
+
+
                         //backwardIntraWP(b.getTail(), msig, body, bdg, isStaticTrack, nextContainer, visitedBlocks); //should it be a copy of the bdg? //Todo, should take the block graph as an input
                         /** We do a depth-first backwards exploration on the previous block, prev_unit (which is null) with be assigned to the tail of the block on startup */
                         /** When there are multiple predecessors, it means we have that the statement will be executed no matter which branch is taken, we only care to track controls if there is a definition under ledit branch, so we reset the @foundTaintInBranch tracker to false */
@@ -825,14 +895,20 @@ public class MethodWorker {
                         //only when this is done, now we do a merge?
                         //should probably return a set of constraints so we can do a or
 
-
+                    
                         //how do I not duplicate the state all the way?
                         //check if something was already visited (merged state?)
 
-                        //else 
+                        //here we should copy the state before exploring the entire branch
+                        //then reset the bdg constraints to null or pass a copy?
+                        //then OR(before and new, before and next)
+ 
                         }
                         MyUtil.printlnOutput("Done with all left sides of the branch, starting right side ...");
                         b = preds.get(0);
+
+                        //Save the constraint from other branch
+                        //Predicate branchI = bdg.getLastNode().getPredicate();
                         //Reset the last node in the graph
                         bdg.setLastNode(lastNode, isStaticTrack);
                         cur_block = b; //we proceed with one block only, we can just ignore the other one (likely the block at pos 1 correspond to the target case (with the goto), so we'll reach the branching condition faster)
@@ -1921,12 +1997,14 @@ public class MethodWorker {
             return;
         if (deadEntryMethods.size() >= MyConstant.MAX_DEAD_ENTRYR_NUM)
             return;
+        String msig = method.getSignature();
+        if(msig.startsWith("android.") || msig.startsWith("androidx."))
+            return;
         
         // save it for switch to another path later
         BDGUnit lastnode = bdg.getLastNode(isStaticTrack);
         
         Set<CallerContainer> caller_methods;
-        String msig = method.getSignature();
         
         MyUtil.printlnOutput(String.format("%s Analyzing %s in crossCallerMethod",
                 MyConstant.ForwardPrefix, msig),

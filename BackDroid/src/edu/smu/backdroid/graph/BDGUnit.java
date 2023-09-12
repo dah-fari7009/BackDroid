@@ -1,6 +1,7 @@
 package edu.smu.backdroid.graph;
 
 import soot.Unit;
+import edu.smu.backdroid.symbolic.*;
 
 /**
  * a node in BDG
@@ -8,6 +9,9 @@ import soot.Unit;
  * @author Daoyuan
  * @since 13-04-13
  * @restart 17-06-06
+ * updated by Faridah
+ * 
+ * This class will also serve to maintain per-unit flow information (i.e., collecting constraints) for implementing merge or flow through operations
  */
 public class BDGUnit {
     
@@ -26,11 +30,32 @@ public class BDGUnit {
 
     private boolean isNeeded = true;
 
+    private Predicate predicate;
+
+    //private Constraint ...
+
     public BDGUnit(String msig, Unit unit) {
         this.msig = msig;
         this.unit = unit;
         this.id = NODE_ID++;
+        //TODO default predicate to TRUE and minimize
+
     }
+
+
+    /*public void combine(Predicate newPredicate){
+        if(predicate.equals(Predicate.Operator.NONE));
+            predicate = newPredicate;
+    }*/
+
+    public Predicate getPredicate(){
+        return predicate;
+    }
+
+    public void setPredicate(Predicate predicate){
+        this.predicate = predicate;
+    }
+
 
     public boolean isNeeded(){
         return isNeeded;

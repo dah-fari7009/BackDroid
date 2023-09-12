@@ -245,6 +245,8 @@ public static final String GetBroadcast = "<android.app.PendingIntent: android.a
      * Maximum caller each time
      */
     public static final int MAX_CALLER_NUM = 5;
+
+    public static final int MAX_CALL_DEPTH = 5;
     
     public static final int MAX_LIVE_ENTRYR_NUM = 3;
     
