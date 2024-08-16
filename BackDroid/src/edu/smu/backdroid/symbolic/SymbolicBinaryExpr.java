@@ -28,7 +28,7 @@ public class SymbolicBinaryExpr extends SymbolicExpr{
 
     @Override
     public String toString(){
-        return "( " + left.toString() + " " + op.toString() + " " + right.toString() + " )";
+        return "[ " + left.toString() + " " + op.toString() + " " + right.toString() + " ]";
     }
 
     public boolean contains(SymbolicExpr other){

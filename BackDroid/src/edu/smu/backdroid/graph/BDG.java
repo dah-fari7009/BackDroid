@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import soot.SootClass;
 import soot.SootField;
 import soot.SootFieldRef;
+import soot.SootMethod;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.ArrayRef;
@@ -24,6 +25,9 @@ import soot.jimple.InstanceFieldRef;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;
 import soot.jimple.StaticFieldRef;
+import soot.Type;
+import soot.shimple.PhiExpr;
+import soot.toolkits.scalar.ValueUnitPair;
 import edu.smu.backdroid.analysis.FieldWorker;
 import edu.smu.backdroid.analysis.UnitWorker;
 import edu.smu.backdroid.symbolic.*;
@@ -100,7 +104,7 @@ public class BDG {
      * A global taint map for the whole graph
      */
     protected Map<String, Set<String>> taintMap;
-    protected Map<String, Map<String, SymbolicObj>> symbMap;
+    protected Map<String, Map<String, SymbolicObjContainer>> symbMap;
     
     /**
      * Save the String-based fields and their original StaticFieldRef
@@ -123,7 +127,7 @@ public class BDG {
         this.nodeList = new ArrayList<BDGUnit>();
         this.edgeSet = new HashSet<BDGEdge>();
         this.taintMap = new HashMap<String, Set<String>>();
-        this.symbMap = new HashMap<String, Map<String, SymbolicObj>>();
+        this.symbMap = new HashMap<String, Map<String, SymbolicObjContainer>>();
         this.objectFieldSet = new HashSet<String>();
         this.normalTails = new HashSet<BDGUnit>();
         this.fakeTails = new HashSet<BDGUnit>();
@@ -137,7 +141,7 @@ public class BDG {
          * TODO We shall have a field map for each path?
          */
         Set<String> fieldset = new HashSet<String>();
-        Map<String, SymbolicObj> symbFieldSet = new HashMap<String, SymbolicObj>();
+        Map<String, SymbolicObjContainer> symbFieldSet = new HashMap<String, SymbolicObjContainer>();
         this.taintMap.put(MyConstant.GLOBALFIELD, fieldset);
         this.symbMap.put(MyConstant.GLOBALFIELD, symbFieldSet);
         
@@ -301,7 +305,7 @@ public class BDG {
      * @return
      */
 
-    public BDGUnit addBranchingNode(Unit unit, String msig, Predicate predicate, final boolean isStaticTrack){
+    public BDGUnit addBranchingNode(Unit unit, String msig, Predicate predicate, BoolObj isReturn, final boolean isStaticTrack){
         //retrieve the last node
         BDGUnit dst_node = this.getLastNode(isStaticTrack);
 
@@ -312,13 +316,28 @@ public class BDG {
         BDGUnit src_node = new BDGUnit(msig, unit);
         Predicate combined = Predicate.combine(Predicate.Operator.AND, dst_node.getPredicate(), predicate);
         //TODO essentially overwritting the node (maybe should traverse the edge or something)
+        //TODO if the node already exists, then it's OR
         MyUtil.printlnOutput(String.format("[PREDICATE] %s added to unit predicate",combined));
         src_node.setPredicate(combined);
         this.addBDGNode(src_node, isStaticTrack);
 
         // create the edge from src to dst
-        this.createBDGEdge(src_node, dst_node, isStaticTrack);
-        
+        if (isReturn.getValue()) {
+            MyUtil.printlnOutput(String.format("%s addReturnNode: %s",
+                    MyConstant.NormalPrefix, unit.toString()),
+                    MyConstant.DEBUG);
+            this.createReturnBDGEdge(src_node, dst_node, isStaticTrack);
+            isReturn.setValue(false);   //!!! Must reset its value TODO
+            
+        } else {
+            MyUtil.printlnOutput(String.format("%s addNormalNode: %s",
+                    MyConstant.NormalPrefix, unit.toString()),
+                    MyConstant.DEBUG);
+            this.createBDGEdge(src_node, dst_node, true, isStaticTrack);
+        }
+
+        //TODO reset the symbolic state when dealing with other branch
+        //let's say we have NOT(z1 == 0) and z1 was already resolved in the true branch but the pointer is lost due to the rewrites, we need to add back into the map z1 ---> whatever is in the stored predicate         
         //node.updatePredicate(AND(lastNode.getPredicate()), buildPredicate(cond)); //will be whatever is stored in the previous node (deal with it when doing add)
                     
         return src_node;
@@ -447,7 +466,7 @@ public class BDG {
         if (value instanceof Constant)
             return false;
         
-        Map<String, SymbolicObj> symbMap = this.getSymbMap(msig);
+        Map<String, SymbolicObjContainer> symbMap = this.getSymbMap(msig);
         /*
          * Handle fields
          */
@@ -510,7 +529,6 @@ public class BDG {
             ArrayRef ar = (ArrayRef) value;
             Value base  = ar.getBase();
             Value index = ar.getIndex();
-            
             this.getTaintSet(msig).add(value.toString());
             MyUtil.printlnOutput(String.format("%s Add %s to the method taint set",
                     MyConstant.NormalPrefix, value.toString()),
@@ -551,17 +569,207 @@ public class BDG {
                 MyConstant.DEBUG);
     }
 
+    public Predicate buildPredicate(ConditionExpr expr, String msig, boolean trueBranch){
+        //Get operator from condition
+        //Get symb object for left 
+
+        SymbolicObjContainer left = getOrBuildSymbContainer(expr.getOp1(), msig),
+                    right = getOrBuildSymbContainer(expr.getOp2(), msig);
+        //Get symb object for right
+        //TODO REUSE existing predicate??
+        SymbolicExprPredicate sPredicate = new SymbolicExprPredicate(SymbolicExpr.combine(SymbolicExpr.getOperatorFromCond(expr), left, right));
+        return trueBranch ? Predicate.combine(Predicate.Operator.NONE, sPredicate): Predicate.combine(Predicate.Operator.NOT, sPredicate);
+        
+        //new Predicate.combine(Predicate.Operator.NOT, new SymbolicExpr(left, right, op));
+        //Update the predicate
+        //combine the predicate from previous node with newly added node (in addNode)
+        //if the node was already visited, should be a branching, so we'll retrieve stored predicate and update the operator to 
+    }
+
+
+    public Predicate buildTargetPredicate(Value val, String msig){
+        return new SymbolicExprPredicate(SymbolicExpr.combine(SymbolicExpr.Operator.EQ, SymbolicObjContainer.build("TARGET"), getOrBuildSymbContainer(val, msig)));
+    }
+
+    public Predicate buildReturnPredicate(Value val, String msig){
+        return new SymbolicExprPredicate(SymbolicExpr.combine(SymbolicExpr.Operator.EQ, SymbolicObjContainer.build("RET"), getOrBuildSymbContainer(val, msig)));
+    }
+
+
+    //Note, everything should be defined once, so if it's a redefinition, it's most likely a loop (e.g., loop index)
+    
+    public void updateSymbolicState(Value oldVal, Value newVal, String msig){
+        String key = oldVal.toString(), newKey = newVal.toString(); //get key from value
+        SymbolicObj newObj = getSymbObjFromValue(newVal, msig); //TODO need to remove the left value
+        Map<String, SymbolicObjContainer> symbMap = getSymbMap(msig);
+        SymbolicObjContainer container = symbMap.get(key); //should exist since we see definitions after use
+        if(container == null){
+            MyUtil.printlnOutput(String.format("[WEIRD] No store symbolic variable for %s, ignoring for now",
+                key),
+                MyConstant.DEBUG);
+                container = SymbolicObjContainer.build("");
+        } //TODO, should rework on explicit castings
+        else if(newObj instanceof SymbolicMethodCall){
+            //Deal with special case of auto-reference for Phi nodes; e.g. i = Phi(i1, i2, i)
+            SymbolicMethodCall mCall = (SymbolicMethodCall)newObj;
+            if(mCall.getMethodName().equals("PHI") && mCall.removeParameter(container))
+                MyUtil.printlnOutput(String.format("[SELFREF] Removed self ref from phi node %s, ignoring for now",
+                mCall.toString()),
+                MyConstant.DEBUG);
+            
+        }
+        container.setChild(newObj);
+        //obj.setType(newObj.getType());
+        //TODO can get rid of them once both branches have been explored (since we're going backwards and the definition was already observed in another branch)
+        //TODO alias map instead, only keep the variable used in if conditions and store all its aliases somewhere else
+        //commented out remove in case the key is still used in another branch?
+        symbMap.remove(key); //TODO, should duplicate the map??
+        /*if(newObj.getType()){ //no need to store constants or method calls
+
+        }*/
+        symbMap.put(newKey, container); //TODO could be a set of strings/aliases
+        MyUtil.printlnOutput(String.format("Updating symbolic variable %s to %s --> %s", key, newKey, container));
+        //return obj;
+    }
+
+
+    /**
+     * 0 ---> CONST(0)
+     * r1 --> VAR(r1)
+     * yy.xx.zz.Util boolean isTablet(r7, r3) --> BOOL(isTablet(VAR(r7), VAR(r3)))
+     * ()
+     */
+    public SymbolicObj getSymbObjFromValue(Value value, String msig){
+        //Create a symbolic object with the right type and value?
+        //
+        // Simplify CastExpr
+        // -- CastExpr: (java.net.InetAddress) $r56, Op: $r56
+        //
+        if(value instanceof CastExpr){
+            CastExpr ce = (CastExpr)value;
+            value = ce.getOp();
+            //gte cast type??
+        }
+        Type type = value.getType();
+        SymbolicObj.TYPE symbType = SymbolicObj.getSymbType(type);
+        MyUtil.printlnOutput(String.format("Resolving type %s to %s", type, symbType));
+        MyUtil.printlnOutput(String.format("Resolving class %s ", value.getClass()));
+
+        if(value instanceof InvokeExpr){
+            InvokeExpr ie = (InvokeExpr)value;
+            SymbolicObjContainer ref = null;
+            if(ie instanceof InstanceInvokeExpr){
+                InstanceInvokeExpr iie = (InstanceInvokeExpr) ie;
+                Value base = iie.getBase();
+                ref = getOrBuildSymbContainer(base, msig); //TODO deal with values already stored
+            }
+            List<Value> args = ie.getArgs();
+            int numArgs = ie.getArgCount();
+            SymbolicObjContainer[] params = new SymbolicObjContainer[numArgs];
+            int index = 0;
+            for(Value arg: args){
+                params[index] = getOrBuildSymbContainer(arg, msig);
+                index ++;
+            }
+            return new SymbolicMethodCall(ie.getMethod(), formatMethodName(ie.getMethod()), symbType, ref, params);
+        }
+        else if(value instanceof PhiExpr){
+            PhiExpr phi = (PhiExpr)value;
+            //SymbolicObjContainer ref = null;
+            List<ValueUnitPair> args = phi.getArgs();
+            int index = 0;
+            int numArgs = phi.getArgCount();
+            SymbolicObjContainer[] params = new SymbolicObjContainer[numArgs];
+            for(ValueUnitPair arg: args){
+                params[index] = getOrBuildSymbContainer(arg.getValue(), msig);
+                index ++;
+            }
+            return new SymbolicMethodCall("PHI", symbType,null, params);
+         
+        } //TODO deal with length of
+        else if(value instanceof BinopExpr){
+            BinopExpr boe = (BinopExpr)value;
+            Value boeOp1 = boe.getOp1();
+            Value boeOp2 = boe.getOp2();
+            SymbolicObjContainer[] params = {getOrBuildSymbContainer(boeOp1, msig), getOrBuildSymbContainer(boeOp2, msig)};
+            return new SymbolicMethodCall(boe.getSymbol(), symbType, null, params);
+        }
+        else{
+            
+            // The normal cases such as follows:
+            // -- $i0
+            // -- @this: com.afollestad.neuron.Terminal$1
+            // -- @parameter0: com.afollestad.neuron.Neuron
+            // -- r0.<com.afollestad.neuron.Terminal$1: com.afollestad.neuron.Terminal this$0>
+            //
+            /*if(value instanceof Constant){
+                
+            }*/
+            if(value instanceof FieldRef){
+                if(value instanceof InstanceFieldRef){
+                    InstanceFieldRef ifr = (InstanceFieldRef) value;
+                    Value base = ifr.getBase();
+                    return new SymbolicFieldAccess(value.toString(), symbType, getOrBuildSymbContainer(base, msig), ifr.getField());
+                }
+                else if(value instanceof StaticFieldRef){
+                    StaticFieldRef sfr = (StaticFieldRef) value;
+                    return new SymbolicFieldAccess(value.toString(), symbType, null, sfr.getField());
+                }
+            }
+            else if(value instanceof ArrayRef){
+                ArrayRef ar = (ArrayRef) value;
+                Value base  = ar.getBase();
+                Value index = ar.getIndex();
+                /*if(!(index instanceof Constant)){
+
+                }*/
+                //SymbolicObj[] params = {getSymbObjFromValue(), getSymbObjFromValue(boeOp2)};
+                return new SymbolicKeyValueAccess(value.toString(), symbType, getOrBuildSymbContainer(base, msig), getOrBuildSymbContainer(index, msig));
+            }
+            String val = value.toString();
+            if(!(value instanceof Constant) && val.startsWith("@")){//this or parameter
+                MyUtil.printlnOutput(String.format("Found REF %s", val));
+                val = val.split(":")[0];
+            }
+            return new SymbolicObj(val, symbType);
+        }
+    }
+
+    private String formatMethodName(SootMethod method){
+        return method.getDeclaringClass().getShortName() +":"+method.getName();
+    }
+
+    /*private String formatFieldName(FieldRef fieldRef){
+        return fieldRef.getField().getDeclaringClass().getShortName()+
+    }*/
+
+
+    public SymbolicObjContainer getOrBuildSymbContainer(Value val, String msig){
+        String key = val.toString(); //get key from value
+        SymbolicObjContainer obj = getSymbMap(msig).get(key);
+        //Want symbolic representation for object
+        if(obj == null){
+            //obj = new SymbolicObj(key);
+            obj = SymbolicObjContainer.build(getSymbObjFromValue(val, msig));
+            getSymbMap(msig).put(key, obj); //update map
+            MyUtil.printlnOutput(String.format("Adding symbolic variable %s --> %s", key, obj));
+        }
+        else MyUtil.printlnOutput(String.format("Retrieving symbolic variable %s --> %s", key, obj));
+        return obj;
+    }
+
+
     public void addSymbValue(String value, String msig) {
-        this.getSymbMap(msig).put(value, new SymbolicObj(value));
+        this.getSymbMap(msig).put(value, SymbolicObjContainer.build(value));
         MyUtil.printlnOutput(String.format("%s Add %s to the method symb set",
                 MyConstant.NormalPrefix, value),
                 MyConstant.DEBUG);
     }
 
-    public void updateSymbValue(String key, Value newValue, String msig){
+    /*public void updateSymbValue(String key, Value newValue, String msig){
 
-        Map<String, SymbolicObj> symbMap = getSymbMap(msig);
-        SymbolicObj obj = symbMap.get(key);
+        Map<String, SymbolicObjContainer> symbMap = getSymbMap(msig);
+        SymbolicObjContainer obj = symbMap.get(key);
         String oldValue = "";
         if(obj != null){
             oldValue = obj.getValue();
@@ -572,7 +780,7 @@ public class BDG {
         MyUtil.printlnOutput(String.format("%s Updating the method symb set %s --> %s",
                     MyConstant.NormalPrefix, oldValue, newValue),
                     MyConstant.DEBUG);
-    }
+    }*/
     
     /**
      * Four cases:
@@ -638,7 +846,7 @@ public class BDG {
         else {
             this.getTaintSet(msig).remove(value.toString());
         }
-        if(TARGET_INTENT_CLASSES.contains(value.toString())){
+        if(isTargetIntentClass(msig, value.toString())){
             updateTargetIntentClasses(value.toString(), false);
         }
     }
@@ -646,51 +854,15 @@ public class BDG {
     /**
      * Get or create symbolic object associated with key
      */
-    public SymbolicObj getSymbObj(String key, String msig){
+    /*public SymbolicObj getSymbObj(String key, String msig){
         SymbolicObj obj = getSymbMap(msig).get(key);
         if(obj == null){
             obj = new SymbolicObj(key);
             getSymbMap(msig).put(key, obj); //update map
         }
         return obj;
-    }
+    }*/
 
-    public Predicate buildPredicate(ConditionExpr expr, String msig, boolean trueBranch){
-        //Get operator from condition
-        //Get symb object for left 
-
-        SymbolicObj left = getOrBuildSymbObj(expr.getOp1(), msig),
-                    right = getOrBuildSymbObj(expr.getOp2(), msig);
-        //Get symb object for right
-        SymbolicExprPredicate sPredicate = new SymbolicExprPredicate(SymbolicExpr.combine(SymbolicExpr.getOperatorFromCond(expr), left, right));
-        return trueBranch ? Predicate.combine(Predicate.Operator.NONE, sPredicate): Predicate.combine(Predicate.Operator.NOT, sPredicate);
-        
-        //new Predicate.combine(Predicate.Operator.NOT, new SymbolicExpr(left, right, op));
-        //Update the predicate
-        //combine the predicate from previous node with newly added node (in addNode)
-        //if the node was already visited, should be a branching, so we'll retrieve stored predicate and update the operator to 
-    }
-
-    public SymbolicObj getOrBuildSymbObj(Value val, String msig){
-        String key = val.toString(); //get key from value
-        SymbolicObj obj = getSymbMap(msig).get(key);
-        //Want symbolic representation for object
-        if(obj == null){
-            obj = new SymbolicObj(key);
-            getSymbMap(msig).put(key, obj); //update map
-        }
-        MyUtil.printlnOutput(String.format("Adding symbolic variable %s --> %s", key, obj));
-         return obj;
-         /*for(ValueBox used: cond.getUseBoxes()){
-                        Value v = used.getValue();
-                        if(v instanceof Local || v instanceof ArrayRef || v instanceof StaticFieldRef || v instanceof InstanceFieldRef)
-                            bdg.addTaintValue(v, msig);
-                            //here need to track variable symbolically
-                            //bdg.addSymbTaintValue(v, msig);
-                        else MyUtil.printlnOutput(String.format("Found something %s that doesn't map to a var in %s", v, is.toString()));
-                    }
-                    */
-    }
 
      /**
      * Get or Create a symbolic map for a particular method
@@ -698,11 +870,11 @@ public class BDG {
      * @param methodName
      * @return
      */
-    public Map<String, SymbolicObj> getSymbMap(String methodName) {
-        Map<String, SymbolicObj> resMap = this.symbMap.get(methodName);
+    public Map<String, SymbolicObjContainer> getSymbMap(String methodName) {
+        Map<String, SymbolicObjContainer> resMap = this.symbMap.get(methodName);
         // initialize
         if (resMap == null){
-            resMap = new HashMap<String,SymbolicObj>();
+            resMap = new HashMap<String,SymbolicObjContainer>();
             this.symbMap.put(methodName, resMap);
         }
         return resMap;
@@ -795,6 +967,11 @@ public class BDG {
     public BDGUnit getInitNode() {
         return this.initNode;
     }
+
+    private void createBDGEdge(BDGUnit src_node, BDGUnit dst_node,
+             final boolean isStaticTrack) {
+                createBDGEdge(src_node, dst_node, false, isStaticTrack);
+             }
     
     /**
      * Create an edge and add it to the list
@@ -803,7 +980,7 @@ public class BDG {
      * @param dst_node
      */
     private void createBDGEdge(BDGUnit src_node, BDGUnit dst_node,
-            final boolean isStaticTrack) {
+            final boolean isBranchingEdge, final boolean isStaticTrack) {
         BDGEdge edge;
         
         String src_msig = src_node.getMSig();
@@ -814,6 +991,8 @@ public class BDG {
         if (dst_msig.equals(src_msig)) {
             if (dst_unit.equals(src_unit))
                 edge = new BDGEdge(src_node, dst_node, BDGEdgeType.SELFLOOP_EDGE);
+            else if(isBranchingEdge)
+                edge = new BDGEdge(src_node, dst_node, BDGEdgeType.BRANCHING_EDGE);
             else
                 edge = new BDGEdge(src_node, dst_node, BDGEdgeType.DIRECT_EDGE);
             
@@ -972,6 +1151,11 @@ public class BDG {
 
     public Set<String> getTargetIntentClasses(){
         return TARGET_INTENT_CLASSES;
+    }
+
+    public boolean isTargetIntentClass(String msig, String value){
+        return initNode.getMSig().equals(msig) && getTargetIntentClasses().contains(value);
+        //getTargetIntentClasses().contains(
     }
 
     public boolean needTargetUpdate(){

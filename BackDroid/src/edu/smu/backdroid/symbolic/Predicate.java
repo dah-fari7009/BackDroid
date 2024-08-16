@@ -21,7 +21,11 @@ public abstract class Predicate {
      */
 
     public enum Operator {
-        NONE,
+        NONE {
+            public String toString(){
+                return "";
+            }
+        },
         AND,
         OR,
         NOT

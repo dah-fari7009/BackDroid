@@ -38,6 +38,7 @@ public class BDGUnit {
         this.msig = msig;
         this.unit = unit;
         this.id = NODE_ID++;
+        this.predicate = Predicate.TRUE();
         //TODO default predicate to TRUE and minimize
 
     }

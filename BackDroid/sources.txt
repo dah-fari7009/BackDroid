@@ -26,6 +26,17 @@
 ./src/edu/smu/backdroid/structure/TaintContainer.java
 ./src/edu/smu/backdroid/structure/TrackContainer.java
 ./src/edu/smu/backdroid/structure/VLMContainer.java
+./src/edu/smu/backdroid/symbolic/Predicate.java
+./src/edu/smu/backdroid/symbolic/UnaryPredicate.java
+./src/edu/smu/backdroid/symbolic/BinaryPredicate.java
+./src/edu/smu/backdroid/symbolic/SymbolicExprPredicate.java
+./src/edu/smu/backdroid/symbolic/SymbolicExpr.java
+./src/edu/smu/backdroid/symbolic/SymbolicBinaryExpr.java
+./src/edu/smu/backdroid/symbolic/SymbolicObj.java
+./src/edu/smu/backdroid/symbolic/SymbolicObjContainer.java
+./src/edu/smu/backdroid/symbolic/SymbolicMethodCall.java
+./src/edu/smu/backdroid/symbolic/SymbolicKeyValueAccess.java
+./src/edu/smu/backdroid/symbolic/SymbolicFieldAccess.java
 ./src/edu/smu/backdroid/util/CLI.java
 ./src/edu/smu/backdroid/util/MyConstant.java
 ./src/edu/smu/backdroid/util/MyError.java

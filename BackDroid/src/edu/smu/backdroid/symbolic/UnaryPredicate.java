@@ -30,7 +30,8 @@ public class UnaryPredicate extends Predicate{
     }
 
     public String toString(){
-        return "UNARY_("+operator.toString()+" "+child.toString()+")";
+        return //"UNARY_ 
+        "("+operator.toString()+" "+child.toString()+")";
     }
 
     @Override

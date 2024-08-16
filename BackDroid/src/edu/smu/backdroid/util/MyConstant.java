@@ -248,9 +248,9 @@ public static final String GetBroadcast = "<android.app.PendingIntent: android.a
 
     public static final int MAX_CALL_DEPTH = 5;
     
-    public static final int MAX_LIVE_ENTRYR_NUM = 3;
+    public static final int MAX_LIVE_ENTRYR_NUM = 5;
     
-    public static final int MAX_DEAD_ENTRYR_NUM = 5;
+    public static final int MAX_DEAD_ENTRYR_NUM = 8;
     
     /**
      * The detection choice. Default is DETECT_CRYPTO

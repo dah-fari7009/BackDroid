@@ -349,11 +349,16 @@ public class PortDetector {
                 MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
                 continue;
             }*/
-            if(!classname.equals("com.sec.android.easyMover.ui.CompletedActivity$2")){
+            /*if(!classname.equals("com.sec.android.easyMover.ui.CompletedActivity$2")){
                 //("com.sec.android.easyMover.migration.GoogleLoginHelper")
                 MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
                 continue;
-            }
+            }*/
+            /*if(!classname.equals("com.sec.android.easyMover.ui.MainActivity")){
+                //("com.sec.android.easyMover.migration.GoogleLoginHelper")
+                MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);
+                continue;
+            }*/
             /*if(!classname.equals("com.sec.android.easyMover.migration.GoogleLoginHelper")){
             //("com.sec.android.easyMover.ui.MainActivity")){
                 MyUtil.printlnOutput("***Skipping classes for testing: "+classname, MyConstant.RELEASE);

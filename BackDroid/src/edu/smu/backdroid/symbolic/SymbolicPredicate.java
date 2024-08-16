@@ -24,7 +24,11 @@ public class SymbolicPredicate{ //TODO unary, binary thingie
      */
 
     public enum Operator {
-        NONE,
+        NONE {
+            public String toString(){
+                return "";
+            }
+        },
         AND,
         OR
     }

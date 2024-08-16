@@ -49,7 +49,7 @@ public class CATG {
         }
     }
     
-    private enum REASON {
+    public enum REASON {
         SOFTWARE,
         HARDWARE,
         ENVIRONMENT,

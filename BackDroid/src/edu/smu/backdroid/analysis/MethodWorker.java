@@ -252,10 +252,18 @@ public class MethodWorker {
               /*
          * First check currentEntryNum
          */
-        if (liveEntryMethods.size() >= MyConstant.MAX_LIVE_ENTRYR_NUM)
+        if (liveEntryMethods.size() >= MyConstant.MAX_LIVE_ENTRYR_NUM){
+            MyUtil.printlnOutput(String.format("%s Reached MAX ENTRY METHODS (%s), aborting ...",
+                MyConstant.ForwardPrefix, MyConstant.MAX_LIVE_ENTRYR_NUM),
+                MyConstant.WARN);
             return;
-        if (deadEntryMethods.size() >= MyConstant.MAX_DEAD_ENTRYR_NUM)
+        }
+        if (deadEntryMethods.size() >= MyConstant.MAX_DEAD_ENTRYR_NUM){
+            MyUtil.printlnOutput(String.format("%s Reached MAX DEAD ENTRY METHODS (%s), aborting ...",
+                MyConstant.ForwardPrefix, MyConstant.MAX_DEAD_ENTRYR_NUM),
+                MyConstant.WARN);
             return;
+        }
         //TODO if max depth aux return;
         if(msig.startsWith("android.") || msig.startsWith("androidx."))
             return;
@@ -277,12 +285,12 @@ public class MethodWorker {
         if(graph == null){
             graph = new BriefBlockGraph(body);
             //new CFGToDotGraph().drawCFG(graph, body).plot(PortDetector.PREFIXname+File.separator+msig+"block_test.dot");
-            /*if(msig.contains("void runOptionMenu")){
-                //MyUtil.printlnOutput("The chain: "+u_chain, MyConstant.DEBUG);
+            /*if(msig.contains("java.util.Map needPermissionList(")){
+                MyUtil.printlnOutput("The chain: "+u_chain, MyConstant.DEBUG);
                  new CFGToDotGraph().drawCFG(new ExceptionalUnitGraph(body), body).plot(PortDetector.PREFIXname+File.separator+msig+"unit_test.dot");
-        
-            }
-            new CFGToDotGraph().drawCFG(graph, body).plot(PortDetector.PREFIXname+File.separator+msig+"block_test.dot");*/
+                 new CFGToDotGraph().drawCFG(graph, body).plot(PortDetector.PREFIXname+File.separator+msig+"block_test.dot");
+            }*/
+            new CFGToDotGraph().drawCFG(graph, body).plot(PortDetector.PREFIXname+File.separator+msig+"block_test.dot");
         }
         //Set<Integer> visitedBlocks = new HashSet<>();
         // For set a normal edge or a return edge
@@ -306,8 +314,12 @@ public class MethodWorker {
                 
                 Value returnvalue = MyUtil.extractReturnValueFromUnit(unit);
                 if (returnvalue != null) {
-                    bdg.addNormalNode(unit, msig, isReturn, isStaticTrack);
+                    BDGUnit returnNode = bdg.addNormalNode(unit, msig, isReturn, isStaticTrack);
                     bdg.addTaintValue(returnvalue, msig);
+                    //add symbolic variable
+                    //reset the constraints for that node and add predicate RET == val
+                    returnNode.setPredicate(bdg.buildReturnPredicate(returnvalue, msig));
+                    //bdg.getOrBuildSymbContainer(returnvalue, msig);
                     MyUtil.printlnOutput(String.format("%s The return stmt value: %s",
                             MyConstant.NormalPrefix, returnvalue.toString()),
                             MyConstant.DEBUG);
@@ -377,7 +389,7 @@ public class MethodWorker {
                         * Add this unit into the graph
                         */
                     BDGUnit node;
-                    if (isFromInside && prev_unit.toString().startsWith("r0 := @this")) {
+                    if (isFromInside && prev_unit.toString().startsWith("r0 := @this")) { //identiy?
                         BDGUnit lastnode = bdg.getLastNode(isStaticTrack);
                         String last_msig = lastnode.getMSig();
                         if (!last_msig.equals(msig))//Meaning this node is the only node in msig
@@ -399,6 +411,7 @@ public class MethodWorker {
                     * It may be over-tainted, e,g, InvokeExpr and PhiExpr below.
                     */
                     bdg.addTaintValue(ds_right, msig);
+                    bdg.updateSymbolicState(ds_left, ds_right, msig);
                     isThisStmtTainted = true;
 
                     /*
@@ -418,10 +431,10 @@ public class MethodWorker {
                         List<ValueUnitPair> phi_vup_args = phi_expr.getArgs();
                         for (ValueUnitPair phi_vup_arg : phi_vup_args) {
                             Value phi_arg = phi_vup_arg.getValue();
-                            if(bdg.getTargetIntentClasses().contains(ds_right.toString())) //should be removed?
+                            if(bdg.isTargetIntentClass(msig, ds_right.toString())) //should be removed?
                                 bdg.updateTargetIntentClasses(phi_arg.toString(), true); //todo handle in BDG class
                             bdg.addTaintValue(phi_arg, msig); //need to add to
-                            
+                            //bdg.updateSymbolicState(ds_left, ds_right, msig);
                         }
                         
                         // TODO haven't analyzed predecessor Units
@@ -443,6 +456,7 @@ public class MethodWorker {
                         *    We shall build a relationship between $i1 and $r5
                     */
                     else if (ds_right instanceof InvokeExpr) {
+                        //TODO enqueue and resolve afterwards (problem is the fields)
                         MyUtil.printlnOutput(String.format("%s Having one InvokeExpr: %s",
                                         MyConstant.NormalPrefix, ds_right.toString()),
                                         MyConstant.DEBUG);
@@ -497,6 +511,8 @@ public class MethodWorker {
                                 cur_unit = prev_unit;
                                 continue;
                             }
+
+                            //TODO should enqueue and only track if in symbolic state/constraints
                             
                             // 
                             // Avoid the dead method loop
@@ -580,7 +596,7 @@ public class MethodWorker {
                      */
                     predicate = bdg.buildPredicate((ConditionExpr)cond, msig, false);
                     //TODO use outgoingedges to find the node if it already exists
-                    node = bdg.addBranchingNode(prev_unit, msig, predicate, isStaticTrack);
+                    node = bdg.addBranchingNode(prev_unit, msig, predicate, isReturn, isStaticTrack);
                     if(!foundTaintInBranch){ //No new taint found in the current branch
                         //TODO, add a if true or something
                         //or add but grey out? //what about the statements in that block? Should we store them or something
@@ -606,7 +622,7 @@ public class MethodWorker {
                     
                     isThisStmtTainted = true;
                     predicate = bdg.buildPredicate((ConditionExpr)cond, msig, true);
-                    node = bdg.addBranchingNode(prev_unit, msig, predicate, isStaticTrack);
+                    node = bdg.addBranchingNode(prev_unit, msig, predicate, isReturn, isStaticTrack);
                     for(ValueBox used: cond.getUseBoxes()){
                         Value v = used.getValue();
                         if(v instanceof Local || v instanceof ArrayRef || v instanceof StaticFieldRef || v instanceof InstanceFieldRef)
@@ -710,7 +726,9 @@ public class MethodWorker {
                         /*
                      * specialinvoke $r11.<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>($r12, class "com/lge/app1/fota/HttpServerService")
                      */
-                        if (bdg.getTargetIntentClasses().contains(base.toString())){ 
+                        if (bdg.isTargetIntentClass(msig, base.toString())){ 
+                             Predicate pred = null;
+                            
                             if(raw_mthd.getSignature().contains("<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>") 
                             || raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setClass")) {
                             //includes setClassName
@@ -719,6 +737,7 @@ public class MethodWorker {
                             //specialinvoke $r1.<android.content.Intent: void <init>(java.lang.String)>("android.intent.action.VIEW")
                             bdg.updateTargetIntentClasses(base.toString(), false);
                             bdg.updateTargetIntentClasses(iie.getArg(1).toString(), true);
+                            pred = bdg.buildTargetPredicate(iie.getArg(1), msig);
                             //bdg.setTargetIntentClass(iie.getArg(1).toString()); //TODO track vars/aliases
                             //insobj.putOneFieldValue("TARGET_INTENT_CLASS", argus.get(1).toString());//TODO toString or not
                             }
@@ -726,13 +745,16 @@ public class MethodWorker {
                             || raw_mthd.getSignature().contains("<android.content.Intent: void <init>(java.lang.String,android.net.Uri)")){
                                         bdg.updateTargetIntentClasses(base.toString(), false); //action, uri //TODO deal with URI (note URI is tracked in any case as all parameters are tainted conservatively)
                                         bdg.updateTargetIntentClasses(iie.getArg(0).toString(), true);
+                                        pred = bdg.buildTargetPredicate(iie.getArg(0), msig);
                             }
                             else if(raw_mthd.getSignature().contains("<android.content.Intent: void <init>(java.lang.String,android.net.Uri,android.content.Context,java.lang.Class)")){
                                 bdg.updateTargetIntentClasses(base.toString(), false); //action, uri //TODO deal with URI
                                 bdg.updateTargetIntentClasses(iie.getArg(3).toString(), true);
+                                pred = bdg.buildTargetPredicate(iie.getArg(3), msig);
                             }
                             else if(raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setAction")){
                                 bdg.updateTargetIntentClasses(iie.getArg(0).toString(), true);
+                                pred = bdg.buildTargetPredicate(iie.getArg(0), msig);
                                 //TODO, should remove the base intent, but only in case where the intent is initialized without any parameters (todo)
                             }
                             else if(raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setData")){//TODO
@@ -743,8 +765,9 @@ public class MethodWorker {
                                 MyUtil.printlnOutput("Should remove empty intent");
                                 //bdg.updateTargetIntentClasses(base.toString(), false);
                             }
+                            if(pred != null)
+                                node.setPredicate(Predicate.combine(Predicate.Operator.AND, node.getPredicate(), pred));
                             bdg.addTaintValue(ie, msig); //okay??
-
                         }
                         if (PortDetector.apiClassSet.contains(raw_cls_name)) { //assume true for startActivity
                             //TODO, probably androidx isn't in this, so also augment it
@@ -1462,7 +1485,7 @@ public class MethodWorker {
                         List<ValueUnitPair> phi_vup_args = phi_expr.getArgs();
                         for (ValueUnitPair phi_vup_arg : phi_vup_args) {
                             Value phi_arg = phi_vup_arg.getValue();
-                            if(bdg.getTargetIntentClasses().contains(ds_right.toString()))
+                            if(bdg.isTargetIntentClass(msig, ds_right.toString()))
                                 bdg.updateTargetIntentClasses(phi_arg.toString(), true); //todo handle in BDG class
                             bdg.addTaintValue(phi_arg, msig); //need to add to
                             
@@ -1545,11 +1568,14 @@ public class MethodWorker {
                         /*
                      * specialinvoke $r11.<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>($r12, class "com/lge/app1/fota/HttpServerService")
                      */
-                        if (bdg.getTargetIntentClasses().contains(base.toString()) && (raw_mthd.getSignature().contains("<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>") || raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setClass"))) {
+                        if (bdg.isTargetIntentClass(msig, base.toString()) 
+                        && (raw_mthd.getSignature().contains("<android.content.Intent: void <init>(android.content.Context,java.lang.Class)>") 
+                        || raw_mthd.getSignature().contains("<android.content.Intent: android.content.Intent setClass"))) {
                             //TODO setClassName
                             //System.out.println("Found intent initialization, apiClassSet: "+)
                             bdg.updateTargetIntentClasses(base.toString(), false);
                             bdg.updateTargetIntentClasses(iie.getArg(1).toString(), true);
+                            //add symbolic constraint
                             //bdg.setTargetIntentClass(iie.getArg(1).toString()); //TODO track vars/aliases
                             //insobj.putOneFieldValue("TARGET_INTENT_CLASS", argus.get(1).toString());//TODO toString or not
                         }

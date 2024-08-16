@@ -31,7 +31,7 @@ public class BinaryPredicate extends Predicate{
     }
 
     public String toString(){
-        return "BIN(" + leftChild.toString()+ " " + operator.toString() + " " + rightChild.toString()+")BIN";
+        return "(" + leftChild.toString()+ " " + operator.toString() + " " + rightChild.toString()+")";
     }
 
     //@Override

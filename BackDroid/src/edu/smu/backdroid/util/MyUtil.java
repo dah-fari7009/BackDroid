@@ -1847,7 +1847,7 @@ public class MyUtil {
             
         } else if (rootcls_name.equals("android.app.Activity")
                 || rootcls_name.equals("android.app.Service")
-                || rootcls_name.equals("android.content.ContentProvider")) {
+                || rootcls_name.equals("android.content.ContentProvider")) { //why??
             
             MyUtil.printlnOutput(String.format("%s Detect a FAILED entry %s using its root class: %s",
                     MyConstant.CriticalPrefix, method.getSignature(), rootcls_name),

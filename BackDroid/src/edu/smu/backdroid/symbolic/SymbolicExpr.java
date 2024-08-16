@@ -11,7 +11,11 @@ import soot.jimple.NeExpr;
 public abstract class SymbolicExpr{
     public enum Operator{
         //NOT,
-        NONE,
+        NONE {
+            public String toString(){
+                return "";
+            }
+        },
         EQ,
         NEQ,
         GT,
@@ -26,19 +30,19 @@ public abstract class SymbolicExpr{
 
     }
 
-    private static final SymbolicObj TRUE = new SymbolicObj("TRUE", SymbolicObj.TYPE.CONSTANT),
-                                    FALSE = new SymbolicObj("FALSE", SymbolicObj.TYPE.CONSTANT),
-                                    NULL = new SymbolicObj("NULL", SymbolicObj.TYPE.CONSTANT) ;
+    private static final SymbolicObjContainer TRUE = SymbolicObjContainer.build(new SymbolicObj("TRUE", SymbolicObj.TYPE.CONSTANT)),
+                                    FALSE = SymbolicObjContainer.build(new SymbolicObj("FALSE", SymbolicObj.TYPE.CONSTANT)),
+                                    NULL = SymbolicObjContainer.build(new SymbolicObj("NULL", SymbolicObj.TYPE.CONSTANT)) ;
 
-    public static SymbolicObj TRUE(){
+    public static SymbolicObjContainer TRUE(){
         return TRUE;
     }
 
-    public static SymbolicObj FALSE(){
+    public static SymbolicObjContainer FALSE(){
         return FALSE;
     }
 
-    public static SymbolicObj NULL(){
+    public static SymbolicObjContainer NULL(){
         return NULL;
     }
 

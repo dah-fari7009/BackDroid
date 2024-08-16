@@ -132,8 +132,9 @@ public class ClassWorker {
         Iterator<SootMethod> method_iter = mclass.methodIterator();
         while (method_iter.hasNext()) {
             SootMethod method = method_iter.next();
-            /*if(!method.getName().equals("onCreate"))
-                continue;*/
+            //System.out.println(method.getName());
+            //if(!method.getName().equals("actionReceivedApp"))
+            //    continue;
             if (!method.isConcrete())
                 continue;
             
@@ -369,9 +370,13 @@ public class ClassWorker {
                         MyUtil.printOutput("Fake tail nodes: "+bdg.getFakeTails()+"\n");
                         MyUtil.printOutput("Field nodes: "+bdg.getFieldTails()+"\n");
                         //Record in CATG;
+                        //Store entire constraints in constraint file?
                         //BDG.TARGET_INTENT_NAME for tgt, and Bdg.getFirstNode().component name for 
                         //Resolve collected symbolic constraints and map to a reason? Pattern extraction
                         
+                        //Forward analysis to get the constraints
+                        //for each init node in the graph, get Patterns using patterns.extractor
+                        //keep a map from entrypoint to summaries
                         /*
                          * Forward analysis to obtain parameter values
                          */

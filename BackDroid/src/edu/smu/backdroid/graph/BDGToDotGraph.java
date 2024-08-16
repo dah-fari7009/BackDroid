@@ -93,7 +93,12 @@ public class BDGToDotGraph {
             // name for identity
             String src_name = src_msig + CONNECTOR + src_label + src_id;
             String tgt_name = tgt_msig + CONNECTOR + tgt_label + tgt_id;
-            
+            //if(!((src_msig.contains("MainActivity: void actionReceivedApp") && tgt_msig.contains("MainActivity: void actionReceivedApp")))) //|| (src_msig.contains("UIUtil: boolean isTablet") && tgt_msig.contains("UIUtil: boolean isTablet")) ))
+            //    continue;
+
+            //if(!((src_msig.contains("MainActivity: void actionReceivedApp") || src_msig.contains("boolean isSupportInstallAllAPK") || src_msig.contains("com.sec.android.easyMoverCommon.PrefsMgr: java.lang.String getPrefs")) && (tgt_msig.contains("MainActivity: void actionReceivedApp") || tgt_msig.contains("boolean isSupportInstallAllAPK") || tgt_msig.contains("com.sec.android.easyMoverCommon.PrefsMgr: java.lang.String getPrefs"))))
+            //    continue;
+                     
             DotGraphEdge dotedge = canvas.drawEdge(src_name, tgt_name);
             
             // set edge type
@@ -109,6 +114,11 @@ public class BDGToDotGraph {
                 case BDGEdgeType.RETURN_EDGE:
                     dotedge.setAttribute("color", "red");
                     dotedge.setAttribute("style", DotGraphConstants.EDGE_STYLE_DOTTED);
+                    break;
+                case BDGEdge.BRANCHING_EDGE:
+                    dotedge.setAttribute("color", "green");
+                    //if(((src_msig.contains("MainActivity: void actionReceivedApp") && tgt_msig.contains("MainActivity: void actionReceivedApp")))) //|| (src_msig.contains("UIUtil: boolean isTablet") && tgt_msig.contains("UIUtil: boolean isTablet")) ))
+                    //dotedge.setLabel(src_node.getPredicate().toString());
                     break;
                 default:
                     dotedge.setAttribute("color", "red");
@@ -145,6 +155,9 @@ public class BDGToDotGraph {
         Set<String> keyset = nodesetMap.keySet();
         for (String str_m : keyset) {
             String str_cluster = CLUSTER + str_m;
+            //if(!(str_m.contains("CompletedActivity: void initView") || str_m.contains("UIUtil: boolean isTablet")))
+           // if(!(str_m.contains("MainActivity: void actionReceivedApp") || str_m.contains("boolean isSupportInstallAllAPK") || str_m.contains("com.sec.android.easyMoverCommon.PrefsMgr: java.lang.String getPrefs")))
+            //    continue;
             DotGraph subgraph = canvas.createSubGraph(str_cluster);
             subgraph.setGraphLabel(str_m);
             
