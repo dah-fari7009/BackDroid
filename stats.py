@@ -27,6 +27,9 @@ excel_file = None
 
 #output = {'Activity': [], '#Stmts': [], 'Stmts': [], '#Callers': [], 'Caller entrypoints': []}
 
+#TODO handle activity-aliases; <activity-alias name="" targetActivity="">
+# alias can be reported at runtime (in reached activities), should be counted as if targetActivity was reached
+#look more into it
 
 def write_results(data, sheetname, summary=False):
     content = pd.DataFrame(data)
@@ -104,6 +107,51 @@ def build_act(full_name):
         return "N/A"
     return f"{splits[0]}{splits[1]}" if splits[1].startswith(".") else splits[1]
 
+def get_implicit_intents_from_manifest(apk_path, activities):
+    #run script to get the activities and the filters?
+    cmd = ["sh", "./scripts/manifest.sh", f"{apk_path}"]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    intents_map = {}
+    activity = None
+    action = None
+    #todo issue in script, see Audible
+    for line in p.stdout:
+        if b"E: activity (" in line:
+            activity = "N/A"
+            action = None
+        if b"E: action (" in line:
+            action = "N/A"
+        elif b"A: android:name(" in line: #android:name(0x01010003)="com.sec.android.easyMover.ui.IntroduceSamsungActivity"
+            if activity == "N/A": #seen activity 
+                match = line.decode('utf-8').split("\"")[1]
+                if match in activities:
+                    activity = match
+            elif not activity is None: #activity is set and we see name
+                if action == "N/A":
+                    match = line.decode('utf-8').split("\"")[1]
+                    action = match
+                    if activity in intents_map:#action in intents_map:
+                        intents_map[activity].append(action)
+                        #intents_map[action].append(activity)
+                    else:
+                        intents_map[activity] = [action]
+                        #intents_map[action] = [activity]
+                    
+                else: #saw another name, but no action
+                    activity = None
+                    action = None
+            
+    p.wait()
+    return intents_map
+
+def get_implicit_full(apk_path, activities):
+    implicit_activities = get_implicit_intents_from_manifest(apk_path, activities)
+    implicit_full = set()
+    for key,val in implicit_activities.items():
+        implicit_full.update(val)
+    return implicit_full
+
 
 def get_reached_activities(package_name):
     reached_activities = set()
@@ -138,35 +186,62 @@ def get_reached_activities(package_name):
     return reached_activities
 
 
-def breakdown_for_notfound(apk_name, found_activities, reached_activities, all_activities):
+def breakdown_for_notfound(apk_name, found_activities, reached_activities, implicit_activities, all_activities):
+    found_activities = [act for act in found_activities if act in all_activities]
     if len(found_activities) == len(all_activities):
         return "N/A"
-    print(all_activities)
-    print(found_activities)
-    print(reached_activities)
-    exit(1)
+    unreached_tot = len(all_activities) - len(reached_activities)
+
+    #todo deal with activity aliases
+    total = len(all_activities)
+    resolved = len(found_activities)
+    #implicit = len(implicit_activities)
+    #print(f"Out of {total} activities, {unreached_tot} unreached, {resolved}/{total} explicit resolved, {len(implicit_activities.keys())}/{total} implicit")
+    
     notfound_activities = [act for act in all_activities if (act not in reached_activities and act not in found_activities )] #all activities not found that were not reached (don't care about reached)
     num = len(notfound_activities)
-    print(f"{num} not found activities by the tool")
+    print(f"{num}/{unreached_tot} not found activities by the tool")
+
+    new_set = set()
+    #new_set.update(implicit_activities)
+    new_set.update(found_activities)
+    #implicit_full.update(data.keys())
     (alternative, tool_limitations) = ([], [])
     if num > 0:
         #search for class definition in file
+
+        # todo, search for implicit intents and if not found, then alternative
         for act in notfound_activities:
             applog = f"{log_dir}/{apk_name}_dexdump.log"
             formatted_name = bytecode_format(act)
-
+    
             # Search "const-class .*, Lcom/lge/app1/fota/HttpServerService;"
             cmd = f"cat {applog} | grep -e \"const-class .*, {formatted_name}\""
             #print(f"Executing {cmd}")
             process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (out, err) = process.communicate()  #TODO error handling
-            if out.decode() != '':
-                #print(out)
+            if out.decode() != '':                        
                 tool_limitations.append(act)
-            else:
-                #print(f"Couldn't find {act}")
-                alternative.append(act)
-        print(f"Breakdown (#alt: {len(alternative)}, #lim: {len(tool_limitations)})")
+                #print(out)  
+            else: # couldn't find class name
+                #try the intent
+                if act in implicit_activities:
+                    actions = '|'.join(implicit_activities[act])
+                    cmd = f'cat {applog} | grep -E "const-string.*, \\"({actions})\\""'
+                    print(f"Executing {cmd} for {act}")
+                    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    (out, err) = process.communicate()  #TODO error handling
+                    if out.decode() != '':
+                       new_set.add(act)
+                    else:
+                        #print(f"Couldn't find {act}")
+                        alternative.append(act)
+                else:
+                    alternative.append(act)
+        #print(f"Potential alt: {alternative}")
+        max_potential = [act for act in new_set if act not in reached_activities]
+        print(f"Max unreached resolvable: {len(max_potential)}/{unreached_tot}")
+        print(f"Breakdown of {unreached_tot} (#pot: {len(max_potential)}, #alt: {len(alternative)}, #lim: {len(tool_limitations)})")
     return "DONE"
 
 
@@ -334,6 +409,7 @@ def main():
                 #print(f"Found log file: {log_file}")
                 reached_activities = get_reached_activities(package_name)
                 num_reached_activities = len(reached_activities)
+                implicit_full = get_implicit_intents_from_manifest(apk_path, activities) #get_implicit_full(apk_path, activities)
                 #print(f"Found {num_reached_activities} reached activities for {apk_path}")
                 (data, exc) = parse_output(log_file, reached_activities, activities, services, receivers)
                 summary["Apk"].append(apk_name)
@@ -341,7 +417,7 @@ def main():
                 summary["#Activities (total)"].append(num_activities)
                 summary["#Activities (unreached)"].append((num_activities-num_reached_activities))
                 if exc is None:
-                    info = breakdown_for_notfound(apk_name, data['Activity'], reached_activities, activities)
+                    info = breakdown_for_notfound(apk_name, data['Activity'], reached_activities, implicit_full, activities)
                     summary["#Activities (resolved ICC)"].append(f"='{sheet_name}'!A2")
                     summary["%Activities (resolved ICC)"].append(f"=(100 * E{index}/C{index})")
                     summary["#Unreached activities (resolved ICC)"].append(f"='{sheet_name}'!H2")

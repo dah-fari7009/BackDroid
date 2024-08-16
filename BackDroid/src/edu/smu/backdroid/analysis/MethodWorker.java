@@ -540,7 +540,7 @@ public class MethodWorker {
                     //or add but grey out? //what about the statements in that block? Should we store them or something
                     MyUtil.printlnOutput("No definition tainted in this branch, adding but marking as unneeded for now ...", MyConstant.DEBUG);
                     node.setNeeded(false);
-                    foundTaintInBranch = false;
+                    foundTaintInBranch = true;//false;
                 }
                 //This is the end of the block (branching condition)
                 //We put this break here so that we can add the edge first before returning
@@ -787,7 +787,7 @@ public class MethodWorker {
                 if(preds == null || preds.size() == 0)
                     break; //TODO, maybe should be break or something, check for null pointers
                 else if(preds.size() == 1){ //control dependence
-                    Block b = preds.get(0);
+                    Block b = preds.get(0); //TODO get bool value 
                     //if(foundTaintInBranch){
                         //we could retrieve the last statement of the previous block right away (it can be a if statement or a goto)
                     cur_block = b;
